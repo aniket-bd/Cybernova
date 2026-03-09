@@ -1,0 +1,2241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AquaRoot — Smart Irrigation</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+/* ══════════════════════════════════════
+   TOKENS
+══════════════════════════════════════ */
+:root {
+  --earth:  #1c1409;
+  --soil:   #2a1e0e;
+  --bark:   #3d2b14;
+  --leaf:   #2d5e2a;
+  --fern:   #4a8c45;
+  --sprout: #72b86e;
+  --lime:   #a8d8a4;
+  --sky:    #4eb8c4;
+  --aqua:   #8ee0e8;
+  --mist:   #c8f0f3;
+  --cream:  #f8f2e6;
+  --warm:   #f0e4cc;
+  --amber:  #c8922e;
+  --gold:   #e8b84b;
+  --err:    #c84040;
+  --overlay: rgba(20,12,4,0.72);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Outfit',sans-serif;
+  background:var(--earth);
+  color:var(--cream);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* ══════════════════════════════════════
+   SCREENS
+══════════════════════════════════════ */
+.screen{display:none;min-height:100vh}
+.screen.visible{display:block}
+#loginScreen.visible{display:flex}
+
+/* ══════════════════════════════════════
+   PAGE TRANSITION
+══════════════════════════════════════ */
+#pageVeil{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--leaf);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;
+  opacity:0;pointer-events:none;
+  transition:opacity 0.5s ease;
+}
+#pageVeil.in{opacity:1;pointer-events:all}
+.veil-logo{font-family:'Cormorant Garamond',serif;font-size:2.8rem;font-weight:700;color:var(--cream);letter-spacing:-1px}
+.veil-logo span{color:var(--gold)}
+.veil-bar{width:120px;height:3px;background:rgba(255,255,255,.2);border-radius:999px;overflow:hidden}
+.veil-fill{height:100%;background:var(--gold);border-radius:999px;animation:vfill 0.7s ease forwards}
+@keyframes vfill{from{width:0%}to{width:100%}}
+
+/* ══════════════════════════════════════
+   LOGIN SCREEN
+══════════════════════════════════════ */
+#loginScreen{
+  flex-direction:row;
+  min-height:100vh;
+  overflow:hidden;
+}
+
+/* Login left — full photo */
+.login-photo{
+  flex:1;
+  position:relative;
+  overflow:hidden;
+  min-height:100vh;
+}
+.login-photo img{
+  width:100%;height:100%;
+  object-fit:cover;object-position:center;
+  display:block;
+  transform:scale(1.05);
+  animation:slowZoom 20s ease-in-out infinite alternate;
+}
+@keyframes slowZoom{from{transform:scale(1.05)}to{transform:scale(1.12)}}
+.login-photo-overlay{
+  position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(20,12,4,.8) 0%,rgba(20,12,4,.4) 60%,rgba(20,12,4,.7) 100%);
+}
+.login-photo-content{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;justify-content:space-between;
+  padding:3rem;z-index:2;
+}
+.lp-logo-big{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:700;color:var(--cream);letter-spacing:-0.5px}
+.lp-logo-big span{color:var(--gold)}
+.lp-quote{
+  max-width:500px;
+}
+.lp-quote blockquote{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(2.2rem,4vw,3.4rem);
+  font-weight:700;line-height:1.15;
+  letter-spacing:-1px;
+  margin-bottom:1.5rem;
+  text-shadow:0 2px 20px rgba(0,0,0,.4);
+}
+.lp-quote blockquote em{font-style:italic;color:var(--gold)}
+.lp-quote p{
+  font-size:.95rem;color:rgba(248,242,230,.7);
+  line-height:1.7;max-width:420px;
+  text-shadow:0 1px 6px rgba(0,0,0,.3);
+}
+.lp-pills{
+  display:flex;gap:.75rem;flex-wrap:wrap;
+}
+.lp-pill{
+  display:flex;align-items:center;gap:.5rem;
+  background:rgba(248,242,230,.1);
+  border:1px solid rgba(248,242,230,.2);
+  border-radius:999px;
+  padding:.4rem 1rem;
+  font-size:.78rem;font-weight:600;
+  backdrop-filter:blur(8px);
+  color:rgba(248,242,230,.9);
+}
+.lp-pill-dot{width:7px;height:7px;border-radius:50%}
+.lp-pill-dot.green{background:var(--sprout);animation:pulse 2s infinite}
+.lp-pill-dot.gold {background:var(--gold)}
+.lp-pill-dot.sky  {background:var(--sky)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* Login right — form */
+.login-form-panel{
+  width:480px;min-width:420px;
+  background:var(--earth);
+  display:flex;align-items:center;justify-content:center;
+  padding:3rem 2.5rem;
+  position:relative;overflow:hidden;
+}
+.login-form-panel::before{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 80% 40% at 50% 0%,rgba(45,94,42,.15) 0%,transparent 60%),
+    radial-gradient(ellipse 60% 40% at 50% 100%,rgba(78,184,196,.06) 0%,transparent 60%);
+  pointer-events:none;
+}
+.form-box{position:relative;z-index:1;width:100%;max-width:360px}
+.form-logo{font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:700;color:var(--sprout);margin-bottom:2rem}
+.form-logo span{color:var(--sky)}
+
+/* panels */
+.lpanel{display:none}
+.lpanel.active{display:block;animation:panelIn .4s cubic-bezier(.22,1,.36,1) forwards}
+@keyframes panelIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+.f-title{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700;letter-spacing:-.5px;margin-bottom:.35rem;line-height:1.2}
+.f-sub{font-size:.85rem;color:rgba(248,242,230,.5);margin-bottom:1.75rem;line-height:1.6}
+
+/* inputs */
+.ig{margin-bottom:1rem;position:relative}
+.il{display:block;font-size:.72rem;font-weight:600;color:rgba(248,242,230,.55);margin-bottom:.4rem;letter-spacing:.05em;text-transform:uppercase}
+.iw{position:relative}
+.ii{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:.95rem;pointer-events:none;z-index:1;opacity:.4}
+.fi{
+  width:100%;padding:.75rem 1rem .75rem 2.6rem;
+  background:rgba(255,255,255,.055);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:12px;
+  color:var(--cream);
+  font-family:'Outfit',sans-serif;font-size:.9rem;
+  outline:none;
+  transition:border-color .2s,background .2s,box-shadow .2s;
+  -webkit-appearance:none;
+}
+.fi::placeholder{color:rgba(248,242,230,.25)}
+.fi:focus{border-color:var(--sky);background:rgba(78,184,196,.06);box-shadow:0 0 0 3px rgba(78,184,196,.12)}
+.fi.err{border-color:var(--err);box-shadow:0 0 0 3px rgba(200,64,64,.1)}
+.em{font-size:.74rem;color:var(--err);margin-top:.3rem;display:none}
+.em.show{display:block}
+.pw-eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(248,242,230,.3);font-size:.95rem;padding:2px;transition:color .2s}
+.pw-eye:hover{color:rgba(248,242,230,.7)}
+
+.form-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.4rem}
+.chk-label{display:flex;align-items:center;gap:.5rem;font-size:.82rem;color:rgba(248,242,230,.55);cursor:pointer}
+.chk-label input{display:none}
+.chk-box{width:17px;height:17px;border-radius:5px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.04);display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+.chk-label input:checked+.chk-box{background:var(--leaf);border-color:var(--fern)}
+.chk-label input:checked+.chk-box::after{content:'✓';font-size:.68rem;color:white;font-weight:700}
+.link-btn{font-size:.82rem;color:var(--sky);background:none;border:none;cursor:pointer;font-family:'Outfit',sans-serif;font-weight:600;padding:0;transition:color .2s}
+.link-btn:hover{color:var(--aqua);text-decoration:underline}
+
+.sbtn{
+  width:100%;padding:.82rem 1.5rem;
+  background:var(--leaf);color:var(--cream);
+  border:none;border-radius:12px;
+  font-family:'Cormorant Garamond',serif;font-size:1.05rem;font-weight:700;
+  cursor:pointer;transition:all .25s;position:relative;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;gap:.5rem;
+  letter-spacing:.02em;
+}
+.sbtn::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);transform:translateX(-100%);transition:transform .5s}
+.sbtn:hover{background:var(--fern);transform:translateY(-2px);box-shadow:0 8px 28px rgba(45,94,42,.4)}
+.sbtn:hover::after{transform:translateX(100%)}
+.sbtn.loading{pointer-events:none;opacity:.7}
+.spin{width:15px;height:15px;border-radius:50%;border:2px solid rgba(255,255,255,.3);border-top-color:white;animation:sp .7s linear infinite;display:none}
+.sbtn.loading .spin{display:block}
+.sbtn.loading .bt{opacity:.5}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+.divider{display:flex;align-items:center;gap:.75rem;margin:1.4rem 0}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.08)}
+.divider span{font-size:.73rem;color:rgba(248,242,230,.3)}
+.sso-row{display:flex;gap:.75rem}
+.sso-b{flex:1;padding:.6rem;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;cursor:pointer;font-family:'Outfit',sans-serif;font-size:.78rem;font-weight:500;color:rgba(248,242,230,.65);display:flex;align-items:center;justify-content:center;gap:.4rem;transition:all .2s}
+.sso-b:hover{background:rgba(255,255,255,.09);color:var(--cream)}
+.signup-r{text-align:center;margin-top:1.4rem;font-size:.82rem;color:rgba(248,242,230,.4)}
+.signup-r a{color:var(--sky);text-decoration:none;font-weight:600}
+.signup-r a:hover{color:var(--aqua)}
+.back-btn{display:inline-flex;align-items:center;gap:.4rem;font-size:.82rem;color:rgba(248,242,230,.4);background:none;border:none;cursor:pointer;font-family:'Outfit',sans-serif;padding:0;margin-bottom:1.6rem;transition:color .2s}
+.back-btn:hover{color:var(--sky)}
+
+.otp-row{display:flex;gap:.55rem;justify-content:center;margin-bottom:1.4rem}
+.otp-in{width:48px;height:54px;border-radius:12px;text-align:center;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:var(--cream);font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:700;outline:none;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none}
+.otp-in:focus{border-color:var(--sky);box-shadow:0 0 0 3px rgba(78,184,196,.15)}
+.resend-r{text-align:center;font-size:.79rem;color:rgba(248,242,230,.4);margin-bottom:1.25rem}
+.resend-r button{background:none;border:none;color:var(--sky);font-size:.79rem;font-family:'Outfit',sans-serif;cursor:pointer;font-weight:600;padding:0}
+.strength-bar{height:3px;border-radius:999px;background:rgba(255,255,255,.08);margin-top:.45rem;overflow:hidden}
+.strength-fill{height:100%;border-radius:999px;width:0%;transition:width .3s,background .3s}
+.strength-lbl{font-size:.72rem;margin-top:.28rem;min-height:1em}
+.success-wrap{text-align:center;padding:1rem 0}
+.success-ico{width:70px;height:70px;border-radius:50%;background:rgba(45,94,42,.2);border:2px solid rgba(114,184,110,.4);display:flex;align-items:center;justify-content:center;font-size:1.9rem;margin:0 auto 1.4rem;animation:popIn .5s cubic-bezier(.34,1.56,.64,1) forwards}
+@keyframes popIn{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+.success-wrap .f-title,.success-wrap .f-sub{text-align:center}
+
+/* ══════════════════════════════════════
+   MAIN APP NAV
+══════════════════════════════════════ */
+#mainApp{background:var(--earth);margin-left:64px}
+nav{
+  position:fixed;top:0;left:64px;right:0;z-index:200;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 3rem;height:70px;
+  background:rgba(28,20,9,.9);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+.nav-logo{font-family:'Cormorant Garamond',serif;font-size:1.55rem;font-weight:700;color:var(--cream);cursor:pointer;letter-spacing:-.3px}
+.nav-logo span{color:var(--gold)}
+.nav-tabs{display:flex;gap:.25rem}
+.ntab{background:none;border:none;cursor:pointer;font-family:'Outfit',sans-serif;font-size:.875rem;font-weight:500;color:rgba(248,242,230,.55);padding:.5rem 1.1rem;border-radius:999px;transition:all .22s}
+.ntab:hover{color:var(--cream);background:rgba(255,255,255,.07)}
+.ntab.active{background:rgba(45,94,42,.5);color:var(--lime);border:1px solid rgba(114,184,110,.25)}
+.nav-right{display:flex;align-items:center;gap:.85rem}
+.nav-cta{background:var(--fern);color:white;border:none;border-radius:999px;padding:.52rem 1.4rem;font-size:.875rem;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s}
+.nav-cta:hover{background:var(--sprout);transform:translateY(-1px)}
+.prof-wrap{position:relative}
+.prof-btn{width:40px;height:40px;border-radius:50%;border:2px solid rgba(255,255,255,.15);background:rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.88rem;font-weight:700;color:var(--cream);transition:all .2s;font-family:'Outfit',sans-serif}
+.prof-btn.in{background:linear-gradient(135deg,var(--leaf),var(--sky));border-color:var(--sky)}
+.prof-btn:hover{transform:scale(1.06)}
+.prof-dd{
+  position:absolute;top:calc(100% + 12px);right:0;
+  width:270px;
+  background:rgba(28,20,9,.98);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:18px;padding:1.1rem;
+  backdrop-filter:blur(24px);
+  box-shadow:0 28px 72px rgba(0,0,0,.6);
+  display:none;z-index:300;
+  animation:panelIn .22s ease forwards;
+}
+.prof-dd.open{display:block}
+.pd-head{display:flex;align-items:center;gap:.85rem;padding-bottom:1rem;border-bottom:1px solid rgba(255,255,255,.07);margin-bottom:.65rem}
+.pd-av{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--leaf),var(--sky));display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;color:white;flex-shrink:0}
+.pd-name{font-weight:600;font-size:.9rem}
+.pd-mail{font-size:.74rem;color:rgba(248,242,230,.4)}
+.pd-row{display:flex;align-items:center;gap:.6rem;padding:.58rem .5rem;border-radius:9px;font-size:.83rem;color:rgba(248,242,230,.68);cursor:pointer;transition:all .15s;background:none;border:none;width:100%;text-align:left;font-family:'Outfit',sans-serif}
+.pd-row:hover{background:rgba(255,255,255,.06);color:var(--cream)}
+.pd-row.red{color:var(--err)}
+.pd-row.red:hover{background:rgba(200,64,64,.1)}
+.pd-sep{height:1px;background:rgba(255,255,255,.07);margin:.4rem 0}
+.pd-guest p{font-size:.82rem;color:rgba(248,242,230,.5);margin-bottom:.85rem;line-height:1.55}
+.pd-guest-btn{width:100%;padding:.65rem;background:var(--leaf);color:white;border:none;border-radius:10px;font-family:'Outfit',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;transition:all .2s}
+.pd-guest-btn:hover{background:var(--fern)}
+
+/* tabs */
+.tab{display:none}
+.tab.active{display:block}
+
+/* ══════════════════════════════════════
+   HOME — HERO (full bleed)
+══════════════════════════════════════ */
+#home{background:var(--earth)}
+
+.hero{
+  position:relative;height:100vh;min-height:620px;
+  overflow:hidden;display:flex;align-items:flex-end;
+}
+.hero-img{
+  position:absolute;inset:0;z-index:0;
+}
+.hero-img img{
+  width:100%;height:100%;object-fit:cover;object-position:center 30%;
+  display:block;
+}
+.hero-img::after{
+  content:'';position:absolute;inset:0;
+  background:
+    linear-gradient(0deg, rgba(20,12,4,.95) 0%, rgba(20,12,4,.5) 40%, rgba(20,12,4,.15) 75%, transparent 100%),
+    linear-gradient(90deg, rgba(20,12,4,.4) 0%, transparent 60%);
+}
+.hero-content{
+  position:relative;z-index:2;
+  padding:0 5rem 5rem;
+  max-width:760px;
+  animation:heroIn 1s cubic-bezier(.22,1,.36,1) forwards;
+}
+@keyframes heroIn{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:.55rem;
+  background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:999px;padding:.35rem 1rem;
+  font-size:.75rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+  color:rgba(248,242,230,.9);margin-bottom:1.75rem;
+  backdrop-filter:blur(8px);
+}
+.live-badge{width:7px;height:7px;border-radius:50%;background:var(--sprout);animation:pulse 2s infinite}
+.hero h1{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(3rem,6vw,5.5rem);
+  font-weight:700;line-height:1.05;
+  letter-spacing:-2px;
+  margin-bottom:1.5rem;
+  text-shadow:0 4px 30px rgba(0,0,0,.3);
+}
+.hero h1 em{font-style:italic;color:var(--gold)}
+.hero h1 strong{color:var(--sprout);font-style:normal}
+.hero-desc{
+  font-size:1.1rem;line-height:1.75;
+  color:rgba(248,242,230,.72);
+  max-width:540px;margin-bottom:2.5rem;
+}
+.hero-btns{display:flex;gap:1rem;flex-wrap:wrap}
+.btn-hero{
+  display:inline-flex;align-items:center;gap:.5rem;
+  padding:.85rem 2.2rem;border-radius:999px;
+  font-family:'Outfit',sans-serif;font-size:.95rem;font-weight:600;
+  cursor:pointer;transition:all .25s;border:none;
+}
+.btn-hero.primary{background:var(--fern);color:white}
+.btn-hero.primary:hover{background:var(--sprout);transform:translateY(-3px);box-shadow:0 10px 30px rgba(45,94,42,.4)}
+.btn-hero.outline{background:transparent;color:var(--cream);border:1.5px solid rgba(248,242,230,.3)}
+.btn-hero.outline:hover{border-color:var(--gold);color:var(--gold)}
+
+/* scroll indicator */
+.scroll-hint{
+  position:absolute;bottom:2.5rem;right:4rem;z-index:2;
+  display:flex;flex-direction:column;align-items:center;gap:.5rem;
+  font-size:.72rem;color:rgba(248,242,230,.45);letter-spacing:.06em;text-transform:uppercase;
+  animation:bounceHint 2s ease-in-out infinite;
+}
+@keyframes bounceHint{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+
+/* ══════════════════════════════════════
+   LIVE STATS BAR
+══════════════════════════════════════ */
+.stats-bar{
+  background:rgba(45,94,42,.15);
+  border-top:1px solid rgba(114,184,110,.12);
+  border-bottom:1px solid rgba(114,184,110,.12);
+  padding:1.6rem 5rem;
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:1rem;
+}
+.sb-item{text-align:center}
+.sb-num{font-family:'Cormorant Garamond',serif;font-size:2.4rem;font-weight:700;color:var(--cream);line-height:1}
+.sb-num span{font-size:1.2rem;color:var(--sprout)}
+.sb-label{font-size:.78rem;color:rgba(248,242,230,.5);margin-top:.3rem;letter-spacing:.04em}
+
+/* ══════════════════════════════════════
+   CROP GALLERY SECTION
+══════════════════════════════════════ */
+.section{padding:6rem 5rem}
+.section-eyebrow{font-size:.75rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--sprout);margin-bottom:.9rem}
+.section-h2{font-family:'Cormorant Garamond',serif;font-size:clamp(2rem,3.5vw,3rem);font-weight:700;line-height:1.12;letter-spacing:-.5px;margin-bottom:1.2rem}
+.section-h2 em{font-style:italic;color:var(--gold)}
+.section-p{font-size:1rem;line-height:1.75;color:rgba(248,242,230,.6);max-width:560px;margin-bottom:3rem}
+
+/* crop cards */
+.crop-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:1.25rem;
+}
+.crop-card{
+  border-radius:20px;overflow:hidden;
+  position:relative;cursor:pointer;
+  transition:transform .3s ease,box-shadow .3s ease;
+  aspect-ratio:3/4;
+}
+.crop-card:hover{transform:translateY(-8px);box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.crop-card:first-child{grid-row:span 2;aspect-ratio:auto}
+.crop-card img{
+  width:100%;height:100%;object-fit:cover;object-position:center;
+  display:block;
+  transition:transform .5s ease;
+}
+.crop-card:hover img{transform:scale(1.06)}
+.crop-card-overlay{
+  position:absolute;inset:0;
+  background:linear-gradient(0deg,rgba(20,12,4,.85) 0%,rgba(20,12,4,.1) 55%,transparent 100%);
+  display:flex;flex-direction:column;justify-content:flex-end;
+  padding:1.5rem;
+  transition:background .3s ease;
+}
+.crop-card:hover .crop-card-overlay{background:linear-gradient(0deg,rgba(20,12,4,.92) 0%,rgba(45,94,42,.15) 60%,transparent 100%)}
+.crop-tag{
+  display:inline-block;
+  background:rgba(114,184,110,.25);border:1px solid rgba(114,184,110,.35);
+  border-radius:999px;padding:.22rem .7rem;
+  font-size:.7rem;font-weight:700;color:var(--lime);
+  margin-bottom:.6rem;letter-spacing:.04em;text-transform:uppercase;
+  width:fit-content;
+}
+.crop-name{font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:700;margin-bottom:.25rem}
+.crop-status-row{display:flex;align-items:center;gap:.5rem}
+.crop-dot{width:6px;height:6px;border-radius:50%}
+.cd-ok  {background:var(--sprout);animation:pulse 2s infinite}
+.cd-warn{background:var(--amber)}
+.cd-bad {background:var(--err);animation:pulse 1.4s infinite}
+.crop-status-text{font-size:.78rem;color:rgba(248,242,230,.6)}
+.crop-moisture{
+  position:absolute;top:1rem;right:1rem;
+  background:rgba(20,12,4,.6);
+  backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:12px;
+  padding:.45rem .7rem;
+  text-align:center;
+}
+.cm-val{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:700;line-height:1}
+.cm-lbl{font-size:.62rem;color:rgba(248,242,230,.5);text-transform:uppercase;letter-spacing:.05em}
+
+/* ══════════════════════════════════════
+   FARMER SPOTLIGHT SECTION
+══════════════════════════════════════ */
+.farmer-section{
+  padding:0 5rem 6rem;
+  display:grid;
+  grid-template-columns:1.1fr 1fr;
+  gap:4rem;
+  align-items:center;
+}
+.farmer-img-wrap{position:relative}
+.farmer-img-main{
+  width:100%;border-radius:24px;overflow:hidden;
+  aspect-ratio:4/5;position:relative;
+}
+.farmer-img-main img{width:100%;height:100%;object-fit:cover;object-position:center;display:block}
+.farmer-img-main::after{content:'';position:absolute;inset:0;border-radius:24px;background:linear-gradient(180deg,transparent 60%,rgba(20,12,4,.6) 100%)}
+.farmer-badge-card{
+  position:absolute;bottom:-1.5rem;right:-1.5rem;
+  background:var(--soil);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:18px;padding:1.25rem 1.5rem;
+  box-shadow:0 16px 48px rgba(0,0,0,.5);
+  min-width:200px;
+}
+.fbc-title{font-size:.72rem;color:rgba(248,242,230,.45);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.6rem}
+.fbc-row{display:flex;align-items:center;gap:.65rem;margin-bottom:.5rem}
+.fbc-row:last-child{margin-bottom:0}
+.fbc-icon{font-size:1.1rem}
+.fbc-info strong{font-size:.88rem;display:block;line-height:1.2}
+.fbc-info span{font-size:.74rem;color:rgba(248,242,230,.45)}
+.farmer-float{
+  position:absolute;top:-1rem;left:-1rem;
+  background:rgba(45,94,42,.9);
+  border-radius:16px;padding:1rem 1.25rem;
+  backdrop-filter:blur(12px);
+  border:1px solid rgba(114,184,110,.3);
+}
+.ff-num{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:700;color:var(--cream);line-height:1}
+.ff-lbl{font-size:.7rem;color:rgba(248,242,230,.6);max-width:80px;line-height:1.4}
+.farmer-text .section-p{margin-bottom:2rem}
+.feature-list{display:flex;flex-direction:column;gap:1rem;margin-bottom:2.5rem}
+.feat-row{
+  display:flex;align-items:flex-start;gap:1rem;
+  padding:1.1rem 1.25rem;
+  background:rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:16px;
+  transition:border-color .25s,background .25s;
+}
+.feat-row:hover{background:rgba(45,94,42,.1);border-color:rgba(114,184,110,.25)}
+.feat-row-icon{font-size:1.4rem;flex-shrink:0;margin-top:.1rem}
+.feat-row-title{font-weight:600;margin-bottom:.25rem;font-size:.95rem}
+.feat-row-desc{font-size:.83rem;color:rgba(248,242,230,.55);line-height:1.6}
+
+/* ══════════════════════════════════════
+   HOW IT WORKS — timeline
+══════════════════════════════════════ */
+.how-section{
+  padding:6rem 5rem;
+  background:rgba(255,255,255,.02);
+  border-top:1px solid rgba(255,255,255,.05);
+  border-bottom:1px solid rgba(255,255,255,.05);
+}
+.how-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:0;position:relative;margin-top:4rem;
+}
+.how-grid::before{
+  content:'';position:absolute;top:40px;left:10%;right:10%;
+  height:1px;
+  background:linear-gradient(90deg,transparent 0%,var(--fern) 20%,var(--sky) 80%,transparent 100%);
+  opacity:.35;
+}
+.how-step{
+  text-align:center;padding:0 1.5rem;
+  position:relative;
+}
+.how-num{
+  width:80px;height:80px;border-radius:50%;
+  margin:0 auto 1.5rem;
+  background:var(--soil);
+  border:2px solid var(--fern);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;z-index:1;
+  overflow:hidden;
+  transition:border-color .3s,transform .3s;
+}
+.how-step:hover .how-num{border-color:var(--sprout);transform:scale(1.05)}
+.how-num img{width:100%;height:100%;object-fit:cover}
+.how-num-fallback{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:700;color:var(--fern)}
+.how-title{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:700;margin-bottom:.6rem}
+.how-desc{font-size:.83rem;color:rgba(248,242,230,.55);line-height:1.65}
+
+/* ══════════════════════════════════════
+   TESTIMONIAL / FIELD PHOTOS
+══════════════════════════════════════ */
+.field-photos-section{padding:6rem 5rem;overflow:hidden}
+.photo-scroll{
+  display:flex;gap:1.25rem;
+  overflow-x:auto;
+  padding-bottom:1rem;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;
+  scrollbar-color:var(--fern) transparent;
+}
+.photo-scroll::-webkit-scrollbar{height:3px}
+.photo-scroll::-webkit-scrollbar-track{background:transparent}
+.photo-scroll::-webkit-scrollbar-thumb{background:var(--fern);border-radius:999px}
+.photo-item{
+  flex-shrink:0;
+  border-radius:18px;overflow:hidden;
+  position:relative;
+  width:280px;height:380px;
+  cursor:pointer;
+  transition:transform .3s ease;
+}
+.photo-item:hover{transform:scale(1.03)}
+.photo-item img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s ease}
+.photo-item:hover img{transform:scale(1.08)}
+.photo-caption{
+  position:absolute;bottom:0;left:0;right:0;
+  padding:1.5rem 1.25rem 1.25rem;
+  background:linear-gradient(0deg,rgba(20,12,4,.85) 0%,transparent 100%);
+  font-size:.82rem;color:rgba(248,242,230,.8);
+  font-style:italic;
+}
+
+/* ══════════════════════════════════════
+   CTA
+══════════════════════════════════════ */
+.cta-section{
+  position:relative;overflow:hidden;
+  padding:8rem 5rem;text-align:center;
+}
+.cta-bg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;filter:brightness(.3) saturate(.7)}
+.cta-content{position:relative;z-index:1}
+.cta-h2{font-family:'Cormorant Garamond',serif;font-size:clamp(2.2rem,5vw,4rem);font-weight:700;letter-spacing:-1px;margin-bottom:1.25rem;line-height:1.1}
+.cta-h2 em{font-style:italic;color:var(--gold)}
+.cta-sub{font-size:1.05rem;color:rgba(248,242,230,.65);max-width:520px;margin:0 auto 3rem;line-height:1.75}
+.cta-row{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+
+/* footer */
+footer{background:rgba(0,0,0,.4);border-top:1px solid rgba(255,255,255,.06);padding:2.5rem 5rem;display:flex;justify-content:space-between;align-items:center;font-size:.82rem;color:rgba(248,242,230,.38)}
+.foot-logo{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:1.2rem;color:var(--fern)}
+.foot-logo span{color:var(--gold)}
+
+/* ══════════════════════════════════════
+   DASHBOARD
+══════════════════════════════════════ */
+#dashboard{padding-top:70px;min-height:100vh;background:linear-gradient(160deg,#0e0c08 0%,#0b1209 100%)}
+.dash-top{
+  position:relative;overflow:hidden;
+  padding:2.5rem 3rem;
+  border-bottom:1px solid rgba(255,255,255,.05);
+  display:flex;justify-content:space-between;align-items:center;
+}
+.dash-top-bg{position:absolute;inset:0;z-index:0}
+.dash-top-bg img{width:100%;height:100%;object-fit:cover;opacity:.15;filter:saturate(.5)}
+.dash-top-bg::after{content:'';position:absolute;inset:0;background:rgba(14,12,8,.7)}
+.dash-top-content{position:relative;z-index:1}
+.dash-title{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700}
+.dash-sub{font-size:.85rem;color:rgba(248,242,230,.45);margin-top:.2rem}
+.status-pill{display:flex;align-items:center;gap:.55rem;background:rgba(114,184,110,.12);border:1px solid rgba(114,184,110,.25);border-radius:999px;padding:.4rem 1rem;font-size:.8rem;color:var(--sprout);position:relative;z-index:1}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--sprout);animation:pulse 2s infinite}
+
+.dash-body{padding:2rem 3rem;display:grid;grid-template-columns:2fr 1fr;gap:1.5rem}
+.metrics-row{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
+.mc{
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);
+  border-radius:16px;padding:1.25rem 1.5rem;
+  display:flex;align-items:center;gap:1rem;
+  transition:border-color .25s,transform .25s;
+}
+.mc:hover{border-color:rgba(114,184,110,.25);transform:translateY(-2px)}
+.mc-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;overflow:hidden}
+.mc-icon img{width:100%;height:100%;object-fit:cover}
+.mc-val{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:700;line-height:1}
+.mc-lbl{font-size:.75rem;color:rgba(248,242,230,.45);margin-top:.2rem}
+
+.chart-card,.zones-panel,.alerts-panel{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:20px;padding:1.5rem}
+.card-title{font-weight:700;margin-bottom:.25rem;font-size:.95rem}
+.card-sub{font-size:.78rem;color:rgba(248,242,230,.4);margin-bottom:1.2rem}
+canvas{display:block;width:100%}
+.zone-row{display:flex;align-items:center;gap:.75rem;padding:.85rem 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.zone-row:last-child{border-bottom:none}
+.zdot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.zg{background:var(--sprout)}.zb{background:var(--sky)}.za{background:var(--amber)}.zr{background:var(--err)}
+.zi{flex:1}.zi strong{font-size:.87rem;display:block}.zi small{font-size:.73rem;color:rgba(248,242,230,.4)}
+.zbw{width:80px;height:5px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden}
+.zbf{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--leaf),var(--sky))}
+.zpct{font-size:.78rem;font-weight:700;color:var(--sprout);min-width:32px;text-align:right}
+.alert-item{display:flex;gap:.75rem;align-items:flex-start;padding:.75rem 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.alert-item:last-child{border-bottom:none}
+.adot{width:8px;height:8px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.aok{background:var(--sprout)}.awk{background:var(--amber)}.ack{background:var(--err)}
+.at strong{font-size:.84rem;display:block}
+.at small{font-size:.73rem;color:rgba(248,242,230,.4)}
+
+/* ══════════════════════════════════════
+   FARM MANAGER
+══════════════════════════════════════ */
+#farmmanager{padding-top:70px;min-height:100vh;background:linear-gradient(160deg,#0e0c08 0%,#091210 100%)}
+.fm-header{padding:2.5rem 3rem 1.5rem;display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid rgba(255,255,255,.05)}
+.fm-body{padding:2rem 3rem;display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem}
+.fm-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:20px;padding:1.5rem}
+.fm-card.wide{grid-column:span 2}
+.crop-fm-item{display:flex;align-items:center;gap:.85rem;padding:.9rem 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.crop-fm-item:last-child{border-bottom:none}
+.crop-thumb{width:44px;height:44px;border-radius:12px;overflow:hidden;flex-shrink:0}
+.crop-thumb img{width:100%;height:100%;object-fit:cover}
+.crop-info{flex:1}.crop-info strong{font-size:.9rem;display:block}.crop-info small{font-size:.75rem;color:rgba(248,242,230,.4)}
+.cs{font-size:.7rem;font-weight:600;border-radius:999px;padding:.22rem .65rem}
+.cs-h{background:rgba(114,184,110,.2);color:var(--sprout)}.cs-w{background:rgba(78,184,196,.15);color:var(--sky)}.cs-c{background:rgba(200,152,60,.2);color:var(--amber)}
+.si{display:flex;align-items:center;gap:1rem;padding:.85rem 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.si:last-child{border-bottom:none}
+.st{font-size:.75rem;font-weight:700;color:var(--sky);min-width:46px}
+.sinfo{flex:1}.sinfo strong{font-size:.875rem;display:block}.sinfo small{font-size:.75rem;color:rgba(248,242,230,.4)}
+.stog{margin-left:auto;width:36px;height:20px;border-radius:999px;cursor:pointer;border:none;position:relative;flex-shrink:0;transition:background .2s}
+.stog.on{background:var(--leaf)}.stog.off{background:rgba(255,255,255,.12)}
+.stog::after{content:'';position:absolute;width:14px;height:14px;border-radius:50%;background:white;top:3px;transition:left .2s}
+.stog.on::after{left:19px}.stog.off::after{left:3px}
+.sensor-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.sensor-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:1rem}
+.slbl{font-size:.7rem;color:rgba(248,242,230,.4);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem}
+.sval{font-family:'Cormorant Garamond',serif;font-size:1.7rem;font-weight:700;line-height:1}
+.sval span{font-size:.74rem;font-family:'Outfit',sans-serif;font-weight:400;color:rgba(248,242,230,.45)}
+.strend{font-size:.74rem;margin-top:.3rem}
+.tup{color:var(--sprout)}.tdn{color:var(--err)}.tfl{color:var(--amber)}
+.weather-row{display:flex;gap:1rem;flex-wrap:wrap;margin-top:.75rem}
+.wd{flex:1;min-width:68px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:.9rem .7rem;text-align:center}
+.wdd{font-size:.68rem;color:rgba(248,242,230,.4);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.32rem}
+.wdi{font-size:1.4rem;margin-bottom:.32rem}
+.wdt{font-weight:700;font-size:.93rem}
+.wdr{font-size:.68rem;color:var(--sky);margin-top:.2rem}
+.add-btn{width:100%;margin-top:1rem;background:rgba(45,94,42,.15);border:1px dashed rgba(114,184,110,.3);border-radius:12px;padding:.72rem;color:var(--fern);font-family:'Outfit',sans-serif;font-size:.84rem;font-weight:600;cursor:pointer;transition:all .2s}
+.add-btn:hover{background:rgba(45,94,42,.25)}
+
+/* ══════════════════════════════════════
+   PROFILE MODAL
+══════════════════════════════════════ */
+.modal-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.7);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;animation:mfadeIn .2s ease}
+.modal-overlay.open{display:flex}
+@keyframes mfadeIn{from{opacity:0}to{opacity:1}}
+.modal{
+  background:rgba(24,16,8,.98);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:24px;padding:2.5rem;
+  width:100%;max-width:420px;
+  position:relative;
+  animation:panelIn .35s cubic-bezier(.22,1,.36,1) forwards;
+  box-shadow:0 40px 100px rgba(0,0,0,.7);
+  overflow:hidden;
+}
+.modal::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 40% at 50% 0%,rgba(45,94,42,.12) 0%,transparent 60%);pointer-events:none}
+.modal-close{position:absolute;top:1rem;right:1rem;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.07);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.85rem;color:rgba(248,242,230,.45);transition:all .2s}
+.modal-close:hover{background:rgba(255,255,255,.13);color:var(--cream)}
+.modal-logo{font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:700;color:var(--fern);margin-bottom:1.75rem}
+.modal-logo span{color:var(--gold)}
+
+/* toast */
+#toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(24,40,20,.97);border:1px solid rgba(114,184,110,.3);border-radius:12px;padding:.75rem 1.5rem;font-size:.85rem;color:var(--sprout);font-weight:600;backdrop-filter:blur(12px);z-index:999;opacity:0;transition:all .35s ease;pointer-events:none;white-space:nowrap}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ══════════════════════════════════════
+   LEFT SIDEBAR — ICON RAIL
+══════════════════════════════════════ */
+#leftRail {
+  position: fixed; left: 0; top: 0; bottom: 0; z-index: 500;
+  width: 64px;
+  background: rgba(16,11,5,.97);
+  border-right: 1px solid rgba(255,255,255,.07);
+  display: none; flex-direction: column; align-items: center;
+  padding-top: 70px; padding-bottom: 1rem;
+  gap: 2px;
+}
+#leftRail.visible { display: flex; }
+
+.rail-btn {
+  position: relative;
+  width: 48px; height: 52px; border-radius: 14px;
+  background: none; border: none; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 3px;
+  color: rgba(248,242,230,.38);
+  transition: all .2s ease; font-family: 'Outfit',sans-serif;
+}
+.rail-btn:hover { background: rgba(255,255,255,.07); color: rgba(248,242,230,.75); }
+.rail-btn.active { background: rgba(45,94,42,.35); color: var(--sprout); }
+.rail-btn.active::before {
+  content: ''; position: absolute; left: -1px; top: 25%; bottom: 25%;
+  width: 3px; border-radius: 0 4px 4px 0;
+  background: var(--sprout);
+}
+.rbi { font-size: 1.2rem; line-height: 1; }
+.rbl { font-size: .48rem; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; opacity: .8; line-height: 1; }
+.rb-badge {
+  position: absolute; top: 7px; right: 7px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--err); border: 2px solid rgba(16,11,5,.97);
+}
+
+.rail-sep { width: 28px; height: 1px; background: rgba(255,255,255,.07); margin: 4px 0; flex-shrink: 0; }
+
+/* Rail tooltip on hover */
+.rail-btn::after {
+  content: attr(data-tip);
+  position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%);
+  background: rgba(30,22,10,.95); border: 1px solid rgba(255,255,255,.1);
+  border-radius: 8px; padding: .3rem .7rem;
+  font-size: .75rem; font-weight: 600; color: var(--cream);
+  white-space: nowrap; pointer-events: none;
+  opacity: 0; transition: opacity .15s ease;
+  z-index: 600;
+}
+.rail-btn:hover::after { opacity: 1; }
+
+/* ══════════════════════════════════════
+   SIDEBAR EXPANDED PANEL
+══════════════════════════════════════ */
+#sidePanel {
+  position: fixed; left: 64px; top: 0; bottom: 0; z-index: 499;
+  width: 300px;
+  background: rgba(20,14,7,.98);
+  border-right: 1px solid rgba(255,255,255,.08);
+  transform: translateX(-110%);
+  transition: transform .32s cubic-bezier(.22,1,.36,1);
+  display: none; flex-direction: column;
+  box-shadow: 6px 0 40px rgba(0,0,0,.45);
+  overflow: hidden;
+}
+#sidePanel.open { transform: translateX(0); }
+#leftRail.visible ~ #sidePanel { display: flex; }
+
+/* Panel header */
+.sp-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.1rem 1.2rem .9rem;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  flex-shrink: 0;
+  padding-top: 80px;
+}
+.sp-title { font-family: 'Cormorant Garamond',serif; font-size: 1.25rem; font-weight: 700; letter-spacing: -.3px; }
+.sp-close {
+  background: none; border: none; cursor: pointer;
+  color: rgba(248,242,230,.35); font-size: 1rem;
+  width: 30px; height: 30px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+}
+.sp-close:hover { background: rgba(255,255,255,.08); color: var(--cream); }
+
+/* Subtab row */
+.sp-tabs {
+  display: flex; gap: 2px; padding: .65rem .9rem;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  flex-shrink: 0; overflow-x: auto;
+  scrollbar-width: none;
+}
+.sp-tabs::-webkit-scrollbar { display: none; }
+.sptab {
+  background: none; border: none; cursor: pointer;
+  font-family: 'Outfit',sans-serif; font-size: .75rem; font-weight: 600;
+  color: rgba(248,242,230,.42); padding: .4rem .75rem; border-radius: 8px;
+  white-space: nowrap; transition: all .18s; letter-spacing: .02em;
+}
+.sptab:hover { background: rgba(255,255,255,.07); color: rgba(248,242,230,.75); }
+.sptab.active { background: rgba(45,94,42,.3); color: var(--sprout); }
+
+/* Panel body */
+.sp-body {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  scrollbar-width: thin; scrollbar-color: var(--fern) transparent;
+}
+.sp-body::-webkit-scrollbar { width: 3px; }
+.sp-body::-webkit-scrollbar-thumb { background: var(--fern); border-radius: 999px; }
+
+/* Subtab content pages */
+.sp-page { display: none; padding: 1.1rem 1.2rem 2rem; }
+.sp-page.active { display: block; }
+
+/* ── Settings rows ── */
+.sg-title {
+  font-size: .65rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: rgba(248,242,230,.3); margin: 1.1rem 0 .65rem;
+}
+.sg-title:first-child { margin-top: 0; }
+.sg-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .7rem .85rem; border-radius: 11px; margin-bottom: .4rem;
+  background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.06);
+  transition: border-color .2s;
+}
+.sg-row:hover { border-color: rgba(255,255,255,.12); }
+.sg-left { display: flex; align-items: center; gap: .65rem; }
+.sg-icon {
+  width: 30px; height: 30px; border-radius: 9px;
+  background: rgba(255,255,255,.05);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .95rem; flex-shrink: 0;
+}
+.sg-lbl { font-size: .84rem; font-weight: 500; line-height: 1.2; }
+.sg-sub { font-size: .7rem; color: rgba(248,242,230,.38); margin-top: .1rem; }
+/* mini toggle */
+.tog {
+  width: 36px; height: 20px; border-radius: 999px; border: none;
+  cursor: pointer; position: relative; flex-shrink: 0; transition: background .2s;
+}
+.tog.on  { background: var(--leaf); }
+.tog.off { background: rgba(255,255,255,.14); }
+.tog::after {
+  content: ''; position: absolute; width: 14px; height: 14px;
+  border-radius: 50%; background: white; top: 3px; transition: left .2s;
+}
+.tog.on::after  { left: 19px; }
+.tog.off::after { left: 3px; }
+.sg-select {
+  background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1);
+  border-radius: 8px; color: var(--cream); font-family: 'Outfit',sans-serif;
+  font-size: .78rem; padding: .28rem .55rem; cursor: pointer; outline: none;
+  max-width: 100px;
+}
+.sg-select option { background: #1c1409; }
+
+/* ── Chat ── */
+.chat-agent-bar {
+  display: flex; align-items: center; gap: .7rem;
+  padding: .65rem .85rem; border-radius: 11px; margin-bottom: 1rem;
+  background: rgba(45,94,42,.15); border: 1px solid rgba(114,184,110,.2);
+}
+.chat-agent-av {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--leaf); display: flex; align-items: center;
+  justify-content: center; font-size: 1rem; flex-shrink: 0;
+}
+.chat-agent-name { font-size: .85rem; font-weight: 600; }
+.chat-agent-status { font-size: .68rem; color: var(--sprout); display: flex; align-items: center; gap: .3rem; }
+.c-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--sprout); animation: pulse 2s infinite; }
+
+.chat-msgs {
+  display: flex; flex-direction: column; gap: .75rem;
+  height: 300px; overflow-y: auto; padding-right: 2px; margin-bottom: .85rem;
+  scrollbar-width: thin; scrollbar-color: var(--fern) transparent;
+}
+.chat-msgs::-webkit-scrollbar { width: 2px; }
+.chat-msgs::-webkit-scrollbar-thumb { background: var(--fern); }
+.cmsg {
+  max-width: 85%; padding: .6rem .85rem; border-radius: 14px;
+  font-size: .82rem; line-height: 1.55;
+}
+.cmsg.bot  { background: rgba(45,94,42,.18); border: 1px solid rgba(114,184,110,.18); align-self: flex-start; border-bottom-left-radius: 4px; }
+.cmsg.user { background: rgba(78,184,196,.14); border: 1px solid rgba(78,184,196,.2); align-self: flex-end; text-align: right; border-bottom-right-radius: 4px; }
+.cmsg-time { font-size: .62rem; color: rgba(248,242,230,.3); margin-top: .25rem; }
+.chat-typing-row { display: none; align-items: center; gap: .4rem; margin-bottom: .55rem; }
+.chat-typing-row.show { display: flex; }
+.chat-typing-row span { font-size: .75rem; color: rgba(248,242,230,.4); }
+.t-dots b {
+  display: inline-block; width: 4px; height: 4px; border-radius: 50%;
+  background: var(--sprout); margin: 0 1px;
+  animation: td 1.2s ease-in-out infinite;
+}
+.t-dots b:nth-child(2){animation-delay:.2s} .t-dots b:nth-child(3){animation-delay:.4s}
+@keyframes td{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-4px);opacity:1}}
+.chat-input-wrap { display: flex; gap: .55rem; padding-top: .8rem; border-top: 1px solid rgba(255,255,255,.07); }
+.chat-txt {
+  flex: 1; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+  border-radius: 11px; color: var(--cream); font-family: 'Outfit',sans-serif;
+  font-size: .83rem; padding: .6rem .85rem; outline: none; resize: none;
+  transition: border-color .2s; max-height: 80px;
+}
+.chat-txt:focus { border-color: var(--sky); }
+.chat-send-btn {
+  width: 36px; height: 36px; border-radius: 10px; border: none;
+  background: var(--fern); cursor: pointer; font-size: .9rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .2s; flex-shrink: 0; align-self: flex-end;
+}
+.chat-send-btn:hover { background: var(--sprout); transform: scale(1.06); }
+.chat-quick-btns { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .7rem; }
+.cqb {
+  font-size: .72rem; font-weight: 500; color: rgba(248,242,230,.65);
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+  border-radius: 999px; padding: .28rem .65rem; cursor: pointer;
+  transition: all .18s; font-family: 'Outfit',sans-serif;
+}
+.cqb:hover { background: rgba(45,94,42,.2); border-color: rgba(114,184,110,.3); color: var(--sprout); }
+
+/* ── Contact ── */
+.cc-card {
+  background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07);
+  border-radius: 13px; padding: 1rem 1.1rem; margin-bottom: .6rem;
+  cursor: pointer; transition: all .22s;
+}
+.cc-card:hover { background: rgba(45,94,42,.1); border-color: rgba(114,184,110,.25); }
+.cc-top { display: flex; align-items: center; gap: .75rem; margin-bottom: .45rem; }
+.cc-ico {
+  width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+}
+.cc-ico.g { background: rgba(45,94,42,.25); }
+.cc-ico.b { background: rgba(78,184,196,.15); }
+.cc-ico.a { background: rgba(200,146,46,.15); }
+.cc-name { font-weight: 600; font-size: .88rem; }
+.cc-sub  { font-size: .72rem; color: rgba(248,242,230,.4); }
+.cc-val  { font-size: .82rem; color: var(--sky); font-weight: 500; }
+.cc-avail{ font-size: .7rem; color: var(--sprout); display: flex; align-items: center; gap: .35rem; margin-top: .35rem; }
+.cc-avail-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--sprout); animation: pulse 2s infinite; }
+.contact-cta {
+  width: 100%; margin-top: 1.1rem; padding: .68rem;
+  background: var(--leaf); border: none; border-radius: 11px; color: white;
+  font-family: 'Outfit',sans-serif; font-size: .85rem; font-weight: 600;
+  cursor: pointer; transition: all .2s;
+}
+.contact-cta:hover { background: var(--fern); }
+.hours-note { font-size: .74rem; color: rgba(248,242,230,.38); text-align: center; margin-top: .75rem; line-height: 1.65; }
+
+/* ── Language ── */
+.lang-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .55rem; margin-bottom: .5rem; }
+.lang-card {
+  border-radius: 12px; padding: .75rem .6rem; text-align: center;
+  background: rgba(255,255,255,.03); border: 1.5px solid rgba(255,255,255,.07);
+  cursor: pointer; transition: all .2s;
+}
+.lang-card:hover { background: rgba(45,94,42,.1); border-color: rgba(114,184,110,.25); }
+.lang-card.sel { background: rgba(45,94,42,.22); border-color: var(--fern); }
+.lang-flag  { font-size: 1.45rem; margin-bottom: .3rem; }
+.lang-name  { font-size: .8rem; font-weight: 600; }
+.lang-nat   { font-size: .67rem; color: rgba(248,242,230,.4); }
+.lang-save  {
+  width: 100%; margin-top: 1rem; padding: .68rem;
+  background: var(--leaf); border: none; border-radius: 11px; color: white;
+  font-family: 'Outfit',sans-serif; font-size: .85rem; font-weight: 600;
+  cursor: pointer; transition: all .2s;
+}
+.lang-save:hover { background: var(--fern); }
+
+/* Sidebar backdrop */
+#sbBack {
+  position: fixed; inset: 0; z-index: 498;
+  background: rgba(0,0,0,.32); backdrop-filter: blur(2px);
+  display: none;
+}
+#sbBack.show { display: block; }
+
+/* ══════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════ */
+@media(max-width:1100px){
+  .section,.field-photos-section,.farmer-section,.how-section,.cta-section{padding-left:2.5rem;padding-right:2.5rem}
+  .hero-content{padding:0 2.5rem 4rem}
+  .stats-bar{padding:1.5rem 2.5rem}
+  .crop-grid{grid-template-columns:repeat(2,1fr)}
+  .crop-card:first-child{grid-row:span 1;aspect-ratio:3/4}
+  .farmer-section{grid-template-columns:1fr;gap:2.5rem}
+  .how-grid{grid-template-columns:repeat(2,1fr);gap:2rem}
+  .how-grid::before{display:none}
+  footer{padding:2rem 2.5rem}
+}
+@media(max-width:820px){
+  .login-photo{display:none}
+  .login-form-panel{width:100%;min-width:unset;border-left:none}
+  #loginScreen.visible{justify-content:center}
+  nav{padding:0 1.5rem}
+  .ntab span{display:none}
+  .dash-body,.fm-body{grid-template-columns:1fr}
+  .metrics-row{grid-template-columns:1fr 1fr}
+}
+@media(max-width:600px){
+  .crop-grid{grid-template-columns:1fr}
+  .metrics-row{grid-template-columns:1fr}
+  .hero h1{font-size:2.5rem;letter-spacing:-.5px}
+  .stats-bar{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<div id="pageVeil">
+  <div class="veil-logo">Aqua<span>Root</span></div>
+  <div class="veil-bar"><div class="veil-fill"></div></div>
+</div>
+<div id="toast"></div>
+
+<!-- ══════════════════════════════════════
+     LOGIN SCREEN
+══════════════════════════════════════ -->
+<div id="loginScreen" class="screen visible">
+
+  <!-- left photo -->
+  <div class="login-photo">
+    <img src="https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=1400&q=85&fit=crop" alt="Farmer in field at sunrise" loading="eager"/>
+    <div class="login-photo-overlay"></div>
+    <div class="login-photo-content">
+      <div class="lp-logo-big">Aqua<span>Root</span></div>
+      <div class="lp-quote">
+        <blockquote>The future of farming is<br><em>intelligent water.</em></blockquote>
+        <p>Precision irrigation powered by soil sensors, AI weather forecasting, and real-time field intelligence — built for the modern farmer.</p>
+      </div>
+      <div class="lp-pills">
+        <div class="lp-pill"><span class="lp-pill-dot green"></span>12,400+ farms active</div>
+        <div class="lp-pill"><span class="lp-pill-dot gold"></span>38% average water saved</div>
+        <div class="lp-pill"><span class="lp-pill-dot sky"></span>99.7% sensor uptime</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- right form -->
+  <div class="login-form-panel">
+    <div class="form-box">
+      <div class="form-logo">Aqua<span>Root</span></div>
+
+      <!-- LOGIN -->
+      <div id="lp-login" class="lpanel active">
+        <div class="f-title">Welcome back</div>
+        <p class="f-sub">Sign in to your farm dashboard</p>
+        <div class="ig">
+          <label class="il" for="l-user">Username or Email</label>
+          <div class="iw"><span class="ii">🌿</span>
+            <input class="fi" id="l-user" type="text" placeholder="farmer@aquaroot.io" autocomplete="username"/>
+          </div>
+          <div class="em" id="l-userE">Please enter your username or email.</div>
+        </div>
+        <div class="ig">
+          <label class="il" for="l-pw">Password</label>
+          <div class="iw"><span class="ii">🔒</span>
+            <input class="fi" id="l-pw" type="password" placeholder="••••••••" autocomplete="current-password"/>
+            <button class="pw-eye" onclick="tpw('l-pw','l-eye')" id="l-eye">👁</button>
+          </div>
+          <div class="em" id="l-pwE">Please enter your password.</div>
+        </div>
+        <div class="form-row">
+          <label class="chk-label"><input type="checkbox" id="l-rem"/><span class="chk-box"></span>Remember me</label>
+          <button class="link-btn" onclick="lpShow('lp-forgot')">Forgot password?</button>
+        </div>
+        <button class="sbtn" id="l-loginBtn" onclick="handleLogin()">
+          <span class="spin"></span><span class="bt">Sign In →</span>
+        </button>
+        <div class="divider"><span>or continue with</span></div>
+        <div class="sso-row">
+          <button class="sso-b" onclick="qlogin('Google')">🌐 Google</button>
+          <button class="sso-b" onclick="qlogin('Apple')">🍎 Apple</button>
+          <button class="sso-b" onclick="qlogin('SSO')">🏢 SSO</button>
+        </div>
+        <div class="signup-r">New here? <a href="#">Create an account</a></div>
+      </div>
+
+      <!-- FORGOT -->
+      <div id="lp-forgot" class="lpanel">
+        <button class="back-btn" onclick="lpShow('lp-login')">← Back</button>
+        <div class="f-title">Reset password</div>
+        <p class="f-sub">Enter your email and we'll send a 6-digit reset code.</p>
+        <div class="ig">
+          <label class="il" for="l-femail">Email address</label>
+          <div class="iw"><span class="ii">📧</span>
+            <input class="fi" id="l-femail" type="email" placeholder="farmer@aquaroot.io"/>
+          </div>
+          <div class="em" id="l-femailE">Please enter a valid email.</div>
+        </div>
+        <button class="sbtn" id="l-sendBtn" onclick="lSendCode()">
+          <span class="spin"></span><span class="bt">Send Reset Code →</span>
+        </button>
+      </div>
+
+      <!-- OTP -->
+      <div id="lp-otp" class="lpanel">
+        <button class="back-btn" onclick="lpShow('lp-forgot')">← Change email</button>
+        <div class="f-title">Check inbox</div>
+        <p class="f-sub">6-digit code sent to <strong id="l-emailShow" style="color:var(--sky)">your email</strong></p>
+        <div class="otp-row">
+          <input class="otp-in" maxlength="1" type="text" inputmode="numeric" id="o1"/>
+          <input class="otp-in" maxlength="1" type="text" inputmode="numeric" id="o2"/>
+          <input class="otp-in" maxlength="1" type="text" inputmode="numeric" id="o3"/>
+          <input class="otp-in" maxlength="1" type="text" inputmode="numeric" id="o4"/>
+          <input class="otp-in" maxlength="1" type="text" inputmode="numeric" id="o5"/>
+          <input class="otp-in" maxlength="1" type="text" inputmode="numeric" id="o6"/>
+        </div>
+        <div class="resend-r">Didn't get it? <button onclick="toast('📧 Code resent!')">Resend</button></div>
+        <button class="sbtn" id="l-verifyBtn" onclick="lVerify()">
+          <span class="spin"></span><span class="bt">Verify Code →</span>
+        </button>
+      </div>
+
+      <!-- NEW PW -->
+      <div id="lp-newpw" class="lpanel">
+        <button class="back-btn" onclick="lpShow('lp-otp')">← Back</button>
+        <div class="f-title">New password</div>
+        <p class="f-sub">Choose a strong password.</p>
+        <div class="ig">
+          <label class="il" for="l-np">New password</label>
+          <div class="iw"><span class="ii">🔒</span>
+            <input class="fi" id="l-np" type="password" placeholder="Min. 8 characters" oninput="chkStr(this.value,'l-sf','l-sl')" autocomplete="new-password"/>
+            <button class="pw-eye" onclick="tpw('l-np','l-npE')" id="l-npEye">👁</button>
+          </div>
+          <div class="strength-bar"><div class="strength-fill" id="l-sf"></div></div>
+          <div class="strength-lbl" id="l-sl"></div>
+          <div class="em" id="l-npE2">Min. 8 characters required.</div>
+        </div>
+        <div class="ig">
+          <label class="il" for="l-cp">Confirm password</label>
+          <div class="iw"><span class="ii">🔒</span>
+            <input class="fi" id="l-cp" type="password" placeholder="Re-enter password" autocomplete="new-password"/>
+            <button class="pw-eye" onclick="tpw('l-cp','l-cpE')" id="l-cpEye">👁</button>
+          </div>
+          <div class="em" id="l-cpE2">Passwords do not match.</div>
+        </div>
+        <button class="sbtn" id="l-resetBtn" onclick="lReset()">
+          <span class="spin"></span><span class="bt">Set New Password →</span>
+        </button>
+      </div>
+
+      <!-- SUCCESS -->
+      <div id="lp-success" class="lpanel">
+        <div class="success-wrap">
+          <div class="success-ico">✅</div>
+          <div class="f-title">Password updated!</div>
+          <p class="f-sub">Sign in with your new credentials.</p>
+          <button class="sbtn" onclick="lpShow('lp-login')"><span class="bt">Back to Sign In →</span></button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MAIN APP
+══════════════════════════════════════ -->
+<div id="mainApp" class="screen">
+
+  <nav>
+    <div class="nav-logo" onclick="showTab('home')">Aqua<span>Root</span></div>
+    <div class="nav-tabs">
+      <button class="ntab active" id="nb-home" onclick="showTab('home')"><span>Home</span></button>
+      <button class="ntab" id="nb-dashboard" onclick="showTab('dashboard')"><span>Dashboard</span></button>
+      <button class="ntab" id="nb-farmmanager" onclick="showTab('farmmanager')"><span>Farm Manager</span></button>
+    </div>
+    <div class="nav-right">
+      <button class="nav-cta" onclick="showTab('dashboard')">Live View</button>
+      <div class="prof-wrap">
+        <div class="prof-btn" id="profBtn" onclick="toggleDD()"><span id="profInit">👤</span></div>
+        <div class="prof-dd" id="profDD"></div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ══ HOME ══ -->
+  <div id="home" class="tab active">
+
+    <!-- HERO -->
+    <div class="hero">
+      <div class="hero-img">
+        <img src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1800&q=85&fit=crop" alt="Irrigation sprinklers over green field at sunrise" loading="eager"/>
+      </div>
+      <div class="hero-content">
+        <div class="hero-eyebrow"><span class="live-badge"></span>Smart Irrigation Platform</div>
+        <h1>Water less.<br><em>Grow more.</em><br><strong>Farm smarter.</strong></h1>
+        <p class="hero-desc">AquaRoot combines sub-surface soil sensing, AI weather prediction, and precision valve control to deliver exactly the right water to every crop — nothing more, nothing less.</p>
+        <div class="hero-btns">
+          <button class="btn-hero primary" onclick="showTab('dashboard')">🌱 Open Dashboard</button>
+          <button class="btn-hero outline" onclick="showTab('farmmanager')">Manage My Farm →</button>
+        </div>
+      </div>
+      <div class="scroll-hint">↓ &nbsp; Scroll to explore</div>
+    </div>
+
+    <!-- STATS BAR -->
+    <div class="stats-bar">
+      <div class="sb-item"><div class="sb-num">38<span>%</span></div><div class="sb-label">Water saved on average</div></div>
+      <div class="sb-item"><div class="sb-num">12<span>K+</span></div><div class="sb-label">Farms monitored globally</div></div>
+      <div class="sb-item"><div class="sb-num">2.4<span>B L</span></div><div class="sb-label">Litres conserved to date</div></div>
+      <div class="sb-item"><div class="sb-num">99<span>.7%</span></div><div class="sb-label">Sensor network uptime</div></div>
+    </div>
+
+    <!-- CROP GALLERY -->
+    <div class="section">
+      <div class="section-eyebrow">Live Field Monitor</div>
+      <h2 class="section-h2">Your crops,<br><em>always in view</em></h2>
+      <p class="section-p">Every zone is tracked in real time. AquaRoot gives you a living picture of each crop's moisture, health, and scheduled irrigation cycles — day and night.</p>
+
+      <div class="crop-grid">
+        <!-- Card 1 — tall -->
+        <div class="crop-card">
+          <img src="https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=700&q=80&fit=crop" alt="Wheat field golden sunrise"/>
+          <div class="crop-card-overlay">
+            <div class="crop-tag">Zone A</div>
+            <div class="crop-name">Golden Wheat</div>
+            <div class="crop-status-row"><span class="crop-dot cd-ok"></span><span class="crop-status-text">Active irrigation · 72% moisture</span></div>
+          </div>
+          <div class="crop-moisture"><div class="cm-val">72%</div><div class="cm-lbl">Moisture</div></div>
+        </div>
+        <!-- Card 2 -->
+        <div class="crop-card">
+          <img src="https://images.unsplash.com/photo-1601493700631-2b16ec4b4716?w=700&q=80&fit=crop" alt="Corn crop rows"/>
+          <div class="crop-card-overlay">
+            <div class="crop-tag">Zone B</div>
+            <div class="crop-name">Sweet Corn</div>
+            <div class="crop-status-row"><span class="crop-dot cd-warn"></span><span class="crop-status-text">Scheduled at 14:30</span></div>
+          </div>
+          <div class="crop-moisture"><div class="cm-val">58%</div><div class="cm-lbl">Moisture</div></div>
+        </div>
+        <!-- Card 3 -->
+        <div class="crop-card">
+          <img src="https://images.unsplash.com/photo-1592841200221-a6898f307baa?w=700&q=80&fit=crop" alt="Tomato plants growing"/>
+          <div class="crop-card-overlay">
+            <div class="crop-tag">Zone D</div>
+            <div class="crop-name">Vine Tomatoes</div>
+            <div class="crop-status-row"><span class="crop-dot cd-ok"></span><span class="crop-status-text">Active irrigation · Optimal</span></div>
+          </div>
+          <div class="crop-moisture"><div class="cm-val">85%</div><div class="cm-lbl">Moisture</div></div>
+        </div>
+        <!-- Card 4 -->
+        <div class="crop-card">
+          <img src="https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=700&q=80&fit=crop" alt="Green soybean crop field"/>
+          <div class="crop-card-overlay">
+            <div class="crop-tag">Zone C</div>
+            <div class="crop-name">Soybean</div>
+            <div class="crop-status-row"><span class="crop-dot cd-bad"></span><span class="crop-status-text">Low moisture — check needed</span></div>
+          </div>
+          <div class="crop-moisture" style="border-color:rgba(200,64,64,.4)"><div class="cm-val" style="color:var(--err)">31%</div><div class="cm-lbl">Moisture</div></div>
+        </div>
+        <!-- Card 5 -->
+        <div class="crop-card">
+          <img src="https://images.unsplash.com/photo-1444392061186-9fc38f16ef55?w=700&q=80&fit=crop" alt="Pepper plants in greenhouse"/>
+          <div class="crop-card-overlay">
+            <div class="crop-tag">Zone E</div>
+            <div class="crop-name">Bell Peppers</div>
+            <div class="crop-status-row"><span class="crop-dot cd-ok"></span><span class="crop-status-text">Idle · On standby</span></div>
+          </div>
+          <div class="crop-moisture"><div class="cm-val">63%</div><div class="cm-lbl">Moisture</div></div>
+        </div>
+        <!-- Card 6 -->
+        <div class="crop-card">
+          <img src="https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=700&q=80&fit=crop" alt="Young seedlings growing in soil"/>
+          <div class="crop-card-overlay">
+            <div class="crop-tag">Zone F</div>
+            <div class="crop-name">New Seedlings</div>
+            <div class="crop-status-row"><span class="crop-dot cd-warn"></span><span class="crop-status-text">Scheduled at 18:00</span></div>
+          </div>
+          <div class="crop-moisture"><div class="cm-val">49%</div><div class="cm-lbl">Moisture</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FARMER SECTION -->
+    <div class="farmer-section">
+      <div class="farmer-img-wrap">
+        <div class="farmer-img-main">
+          <img src="https://images.unsplash.com/photo-1592982537447-6f2a6a0a9b55?w=900&q=85&fit=crop" alt="Farmer working in field with technology"/>
+        </div>
+        <div class="farmer-float">
+          <div class="ff-num">4.2 kL</div>
+          <div class="ff-lbl">Water used today — 38% less than yesterday</div>
+        </div>
+        <div class="farmer-badge-card">
+          <div class="fbc-title">Today's Field Report</div>
+          <div class="fbc-row">
+            <span class="fbc-icon">🌡️</span>
+            <div class="fbc-info"><strong>24°C Soil Temp</strong><span>Optimal for all crops</span></div>
+          </div>
+          <div class="fbc-row">
+            <span class="fbc-icon">💧</span>
+            <div class="fbc-info"><strong>4/6 Zones Active</strong><span>Zone C needs attention</span></div>
+          </div>
+          <div class="fbc-row">
+            <span class="fbc-icon">☀️</span>
+            <div class="fbc-info"><strong>No rain forecast</strong><span>Irrigation on schedule</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="farmer-text">
+        <div class="section-eyebrow">Built for real farmers</div>
+        <h2 class="section-h2">Technology that works<br><em>in the field</em></h2>
+        <p class="section-p">AquaRoot was designed alongside working farmers — not just engineers. From the first sensor install to daily dashboard checks, every feature is built to save you time, money, and water.</p>
+        <div class="feature-list">
+          <div class="feat-row">
+            <span class="feat-row-icon">🛰️</span>
+            <div><div class="feat-row-title">Wireless Soil Sensors</div><div class="feat-row-desc">Self-powered probes at root depth report moisture, temperature, pH, and nitrogen — every 60 seconds.</div></div>
+          </div>
+          <div class="feat-row">
+            <span class="feat-row-icon">🤖</span>
+            <div><div class="feat-row-title">AI Scheduling Engine</div><div class="feat-row-desc">Machine learning fuses your crop profiles, 14-day forecasts, and live readings into the perfect watering plan.</div></div>
+          </div>
+          <div class="feat-row">
+            <span class="feat-row-icon">📱</span>
+            <div><div class="feat-row-title">Control from anywhere</div><div class="feat-row-desc">Open, close, or override any valve on your farm from your phone. Instant alerts when something needs your eye.</div></div>
+          </div>
+        </div>
+        <div class="hero-btns">
+          <button class="btn-hero primary" onclick="showTab('farmmanager')">Explore Farm Manager</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- HOW IT WORKS -->
+    <div class="how-section">
+      <div style="text-align:center">
+        <div class="section-eyebrow">How It Works</div>
+        <h2 class="section-h2" style="text-align:center">From soil to sprinkler<br><em>in milliseconds</em></h2>
+      </div>
+      <div class="how-grid">
+        <div class="how-step">
+          <div class="how-num"><img src="https://images.unsplash.com/photo-1586771107445-d3ca888129ff?w=200&q=80&fit=crop" alt="Soil sensor"/></div>
+          <div class="how-title">1. Sense</div>
+          <div class="how-desc">Wireless probes buried at root depth measure moisture, temperature, conductivity, and pH — continuously.</div>
+        </div>
+        <div class="how-step">
+          <div class="how-num"><img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=200&q=80&fit=crop" alt="Data analytics dashboard"/></div>
+          <div class="how-title">2. Analyse</div>
+          <div class="how-desc">AquaRoot AI cross-references live readings with crop profiles, growth stage, and local weather forecasts.</div>
+        </div>
+        <div class="how-step">
+          <div class="how-num"><img src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=200&q=80&fit=crop" alt="Irrigation planning"/></div>
+          <div class="how-title">3. Decide</div>
+          <div class="how-desc">A precision schedule is generated — zone by zone, drop by drop — delivering exactly what each crop needs.</div>
+        </div>
+        <div class="how-step">
+          <div class="how-num"><img src="https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=200&q=80&fit=crop" alt="Healthy growing crops"/></div>
+          <div class="how-title">4. Grow</div>
+          <div class="how-desc">Smart valves open on command. Results loop back into the model — every cycle makes the next one smarter.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FIELD PHOTO SCROLL -->
+    <div class="field-photos-section">
+      <div class="section-eyebrow" style="margin-bottom:.9rem">From our farms</div>
+      <h2 class="section-h2" style="margin-bottom:2rem">Fields powered<br>by <em>AquaRoot</em></h2>
+      <div class="photo-scroll">
+        <div class="photo-item"><img src="https://images.unsplash.com/photo-1560493676-04071c5f467b?w=500&q=80&fit=crop" alt="Drip irrigation rows"/><div class="photo-caption">Drip lines in tomato beds, Karnataka, India</div></div>
+        <div class="photo-item"><img src="https://images.unsplash.com/photo-1543257580-7269da773bf5?w=500&q=80&fit=crop" alt="Green crop rows aerial"/><div class="photo-caption">Corn field aerial, Punjab — 41% water reduction</div></div>
+        <div class="photo-item"><img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500&q=80&fit=crop" alt="Sprinkler irrigation wheat field"/><div class="photo-caption">Center-pivot wheat irrigation, Rajasthan</div></div>
+        <div class="photo-item"><img src="https://images.unsplash.com/photo-1439127989242-c3749a012eac?w=500&q=80&fit=crop" alt="Sunrise over farm field"/><div class="photo-caption">Morning crop check, Nashik farm — Day 28</div></div>
+        <div class="photo-item"><img src="https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=500&q=80&fit=crop" alt="Farmer checking crop health"/><div class="photo-caption">Soil sensor install, Gujarat cooperative farm</div></div>
+        <div class="photo-item"><img src="https://images.unsplash.com/photo-1495107334309-fcf20504a5ab?w=500&q=80&fit=crop" alt="Green vegetable garden irrigation"/><div class="photo-caption">Vegetable microplot — zero runoff system</div></div>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="cta-section">
+      <div class="cta-bg"><img src="https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=1600&q=80&fit=crop" alt="Farm at dusk"/></div>
+      <div class="cta-content">
+        <h2 class="cta-h2">Ready to grow with<br><em>precision water?</em></h2>
+        <p class="cta-sub">Join 12,000+ farmers saving water, increasing yield, and farming smarter every single day.</p>
+        <div class="cta-row">
+          <button class="btn-hero primary" onclick="showTab('dashboard')">🌱 Start Free Trial</button>
+          <button class="btn-hero outline">Book a Demo</button>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <div class="foot-logo">Aqua<span>Root</span></div>
+      <span>© 2025 AquaRoot Technologies. Precision irrigation for a thirsty world.</span>
+      <span>hello@aquaroot.io</span>
+    </footer>
+
+  </div><!-- /home -->
+
+  <!-- ══ DASHBOARD ══ -->
+  <div id="dashboard" class="tab">
+    <div class="dash-top">
+      <div class="dash-top-bg">
+        <img src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1400&q=70&fit=crop" alt="field"/>
+      </div>
+      <div class="dash-top-content">
+        <div class="dash-title">Live Dashboard</div>
+        <div class="dash-sub">North Field · Updated just now</div>
+      </div>
+      <div class="status-pill"><span class="sdot"></span>All systems operational</div>
+    </div>
+    <div class="dash-body">
+      <div class="metrics-row">
+        <div class="mc"><div class="mc-icon" style="background:rgba(45,94,42,.2)">💧</div><div><div class="mc-val">4.2 kL</div><div class="mc-lbl">Used today</div></div></div>
+        <div class="mc"><div class="mc-icon" style="background:rgba(78,184,196,.15)">🌡️</div><div><div class="mc-val">24°C</div><div class="mc-lbl">Soil temp avg</div></div></div>
+        <div class="mc"><div class="mc-icon" style="background:rgba(200,146,46,.15)">⚡</div><div><div class="mc-val">6/6</div><div class="mc-lbl">Zones online</div></div></div>
+        <div class="mc"><div class="mc-icon" style="background:rgba(200,64,64,.12)">🌧️</div><div><div class="mc-val">0 mm</div><div class="mc-lbl">Rain forecast 24h</div></div></div>
+      </div>
+      <div class="chart-card">
+        <div class="card-title">7-Day Water Usage</div>
+        <div class="card-sub">Kilolitres per day · All zones</div>
+        <canvas id="usageChart" height="200"></canvas>
+      </div>
+      <div class="zones-panel">
+        <div class="card-title">Zone Status</div>
+        <div class="card-sub">Live soil moisture readings</div>
+        <div class="zone-row"><span class="zdot zg"></span><div class="zi"><strong>Zone A — Wheat</strong><small>Active · Valve open</small></div><div class="zbw"><div class="zbf" style="width:72%"></div></div><span class="zpct">72%</span></div>
+        <div class="zone-row"><span class="zdot zb"></span><div class="zi"><strong>Zone B — Corn</strong><small>Scheduled 14:30</small></div><div class="zbw"><div class="zbf" style="width:58%"></div></div><span class="zpct">58%</span></div>
+        <div class="zone-row"><span class="zdot za"></span><div class="zi"><strong>Zone C — Soy</strong><small>⚠ Low moisture</small></div><div class="zbw"><div class="zbf" style="width:31%"></div></div><span class="zpct" style="color:var(--amber)">31%</span></div>
+        <div class="zone-row"><span class="zdot zg"></span><div class="zi"><strong>Zone D — Tomatoes</strong><small>Active · Valve open</small></div><div class="zbw"><div class="zbf" style="width:85%"></div></div><span class="zpct">85%</span></div>
+        <div class="zone-row"><span class="zdot zb"></span><div class="zi"><strong>Zone E — Peppers</strong><small>Idle · Standby</small></div><div class="zbw"><div class="zbf" style="width:63%"></div></div><span class="zpct">63%</span></div>
+        <div class="zone-row"><span class="zdot zb"></span><div class="zi"><strong>Zone F — Seedlings</strong><small>Scheduled 18:00</small></div><div class="zbw"><div class="zbf" style="width:49%"></div></div><span class="zpct">49%</span></div>
+      </div>
+      <div class="alerts-panel" style="grid-column:1/-1">
+        <div class="card-title">Recent Alerts</div>
+        <div class="card-sub">Last 24 hours</div>
+        <div class="alert-item"><span class="adot awk"></span><div class="at"><strong>Zone C moisture below 35% threshold</strong><small>Today · 09:14 AM</small></div></div>
+        <div class="alert-item"><span class="adot aok"></span><div class="at"><strong>Zone A irrigation cycle completed — 180 L delivered</strong><small>Today · 07:30 AM</small></div></div>
+        <div class="alert-item"><span class="adot aok"></span><div class="at"><strong>Rain skip activated — 8mm forecast at 06:00</strong><small>Yesterday · 11:50 PM</small></div></div>
+        <div class="alert-item"><span class="adot ack"></span><div class="at"><strong>Pressure anomaly — Zone B line · Resolved automatically</strong><small>Yesterday · 03:22 PM</small></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ FARM MANAGER ══ -->
+  <div id="farmmanager" class="tab">
+    <div class="fm-header">
+      <div><div class="dash-title">Farm Manager</div><div class="dash-sub">Crops · Schedules · Sensors · Weather</div></div>
+      <button class="nav-cta">+ Add Zone</button>
+    </div>
+    <div class="fm-body">
+      <div class="fm-card">
+        <div class="card-title">Crops &amp; Zones</div><div class="card-sub">6 active zones</div>
+        <div class="crop-fm-item">
+          <div class="crop-thumb"><img src="https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=120&q=80&fit=crop" alt="Wheat"/></div>
+          <div class="crop-info"><strong>Wheat — Zone A</strong><small>42 days · 2.4 ha</small></div><span class="cs cs-h">Healthy</span>
+        </div>
+        <div class="crop-fm-item">
+          <div class="crop-thumb"><img src="https://images.unsplash.com/photo-1601493700631-2b16ec4b4716?w=120&q=80&fit=crop" alt="Corn"/></div>
+          <div class="crop-info"><strong>Corn — Zone B</strong><small>30 days · 1.8 ha</small></div><span class="cs cs-w">Needs water</span>
+        </div>
+        <div class="crop-fm-item">
+          <div class="crop-thumb"><img src="https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=120&q=80&fit=crop" alt="Soybean"/></div>
+          <div class="crop-info"><strong>Soybean — Zone C</strong><small>55 days · 3.1 ha</small></div><span class="cs cs-c">Check needed</span>
+        </div>
+        <div class="crop-fm-item">
+          <div class="crop-thumb"><img src="https://images.unsplash.com/photo-1592841200221-a6898f307baa?w=120&q=80&fit=crop" alt="Tomatoes"/></div>
+          <div class="crop-info"><strong>Tomatoes — Zone D</strong><small>18 days · 0.9 ha</small></div><span class="cs cs-h">Healthy</span>
+        </div>
+        <div class="crop-fm-item">
+          <div class="crop-thumb"><img src="https://images.unsplash.com/photo-1444392061186-9fc38f16ef55?w=120&q=80&fit=crop" alt="Peppers"/></div>
+          <div class="crop-info"><strong>Peppers — Zone E</strong><small>24 days · 0.8 ha</small></div><span class="cs cs-h">Healthy</span>
+        </div>
+        <div class="crop-fm-item">
+          <div class="crop-thumb"><img src="https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=120&q=80&fit=crop" alt="Seedlings"/></div>
+          <div class="crop-info"><strong>Seedlings — Zone F</strong><small>7 days · 0.5 ha</small></div><span class="cs cs-w">Needs water</span>
+        </div>
+        <button class="add-btn">＋ Add New Crop / Zone</button>
+      </div>
+      <div class="fm-card">
+        <div class="card-title">Irrigation Schedule</div><div class="card-sub">Today — automated</div>
+        <div class="si"><span class="st">06:00</span><div class="sinfo"><strong>Zone A — Wheat</strong><small>30 min · Drip · 180 L</small></div><button class="stog on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button></div>
+        <div class="si"><span class="st">08:30</span><div class="sinfo"><strong>Zone D — Tomatoes</strong><small>45 min · Micro-spray · 260 L</small></div><button class="stog on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button></div>
+        <div class="si"><span class="st">14:30</span><div class="sinfo"><strong>Zone B — Corn</strong><small>20 min · Drip · 120 L</small></div><button class="stog on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button></div>
+        <div class="si"><span class="st">16:00</span><div class="sinfo"><strong>Zone C — Soybean</strong><small>40 min · Drip · 240 L</small></div><button class="stog off" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button></div>
+        <div class="si"><span class="st">18:00</span><div class="sinfo"><strong>Zone F — Seedlings</strong><small>15 min · Fine mist · 60 L</small></div><button class="stog on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button></div>
+        <div class="si"><span class="st">20:30</span><div class="sinfo"><strong>Zone E — Peppers</strong><small>25 min · Drip · 150 L</small></div><button class="stog off" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button></div>
+      </div>
+      <div class="fm-card">
+        <div class="card-title">Soil Sensors</div><div class="card-sub">Live · 30 cm depth</div>
+        <div class="sensor-grid">
+          <div class="sensor-card"><div class="slbl">Moisture A</div><div class="sval">72 <span>%</span></div><div class="strend tup">↑ +3% since 8am</div></div>
+          <div class="sensor-card"><div class="slbl">Moisture C</div><div class="sval">31 <span>%</span></div><div class="strend tdn">↓ −8% since 8am</div></div>
+          <div class="sensor-card"><div class="slbl">Soil Temp</div><div class="sval">24 <span>°C</span></div><div class="strend tfl">→ Stable</div></div>
+          <div class="sensor-card"><div class="slbl">EC (salinity)</div><div class="sval">1.4 <span>dS/m</span></div><div class="strend tup">↑ Slight rise</div></div>
+          <div class="sensor-card"><div class="slbl">pH Level</div><div class="sval">6.8 <span>pH</span></div><div class="strend tfl">→ Optimal</div></div>
+          <div class="sensor-card"><div class="slbl">Nitrogen</div><div class="sval">48 <span>ppm</span></div><div class="strend tdn">↓ Below target</div></div>
+        </div>
+      </div>
+      <div class="fm-card wide">
+        <div class="card-title">7-Day Weather Forecast</div><div class="card-sub">Rain affects auto-irrigation schedule</div>
+        <div class="weather-row">
+          <div class="wd"><div class="wdd">MON</div><div class="wdi">☀️</div><div class="wdt">32°C</div><div class="wdr">0 mm</div></div>
+          <div class="wd"><div class="wdd">TUE</div><div class="wdi">⛅</div><div class="wdt">29°C</div><div class="wdr">2 mm</div></div>
+          <div class="wd"><div class="wdd">WED</div><div class="wdi">🌧️</div><div class="wdt">22°C</div><div class="wdr">14 mm</div></div>
+          <div class="wd"><div class="wdd">THU</div><div class="wdi">🌧️</div><div class="wdt">21°C</div><div class="wdr">9 mm</div></div>
+          <div class="wd"><div class="wdd">FRI</div><div class="wdi">⛅</div><div class="wdt">26°C</div><div class="wdr">1 mm</div></div>
+          <div class="wd"><div class="wdd">SAT</div><div class="wdi">☀️</div><div class="wdt">30°C</div><div class="wdr">0 mm</div></div>
+          <div class="wd"><div class="wdd">SUN</div><div class="wdi">☀️</div><div class="wdt">33°C</div><div class="wdr">0 mm</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /mainApp -->
+
+<!-- PROFILE MODAL -->
+<div class="modal-overlay" id="profModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeProfModal()">✕</button>
+    <div class="modal-logo">Aqua<span>Root</span></div>
+    <div id="m-loginP">
+      <div class="f-title">Sign in</div>
+      <p class="f-sub" style="margin-bottom:1.5rem">Access your farm dashboard and field data</p>
+      <div class="ig">
+        <label class="il" for="m-user">Username or Email</label>
+        <div class="iw"><span class="ii">🌿</span>
+          <input class="fi" id="m-user" type="text" placeholder="farmer@aquaroot.io" autocomplete="username"/>
+        </div>
+        <div class="em" id="m-userE">Please enter your username.</div>
+      </div>
+      <div class="ig">
+        <label class="il" for="m-pw">Password</label>
+        <div class="iw"><span class="ii">🔒</span>
+          <input class="fi" id="m-pw" type="password" placeholder="••••••••" autocomplete="current-password"/>
+          <button class="pw-eye" onclick="tpw('m-pw','m-eye')" id="m-eye">👁</button>
+        </div>
+        <div class="em" id="m-pwE">Please enter your password.</div>
+      </div>
+      <div style="text-align:right;margin-bottom:1.25rem">
+        <button class="link-btn" onclick="openMForgot()">Forgot password?</button>
+      </div>
+      <button class="sbtn" id="m-loginBtn" onclick="handleModalLogin()">
+        <span class="spin"></span><span class="bt">Sign In →</span>
+      </button>
+      <div class="divider"><span>or</span></div>
+      <div class="sso-row">
+        <button class="sso-b" onclick="qloginModal('Google')">🌐 Google</button>
+        <button class="sso-b" onclick="qloginModal('Apple')">🍎 Apple</button>
+        <button class="sso-b" onclick="qloginModal('SSO')">🏢 SSO</button>
+      </div>
+    </div>
+    <div id="m-forgotP" style="display:none">
+      <button class="back-btn" onclick="openMLogin()">← Back to sign in</button>
+      <div class="f-title">Reset password</div>
+      <p class="f-sub">We'll send a reset link to your email.</p>
+      <div class="ig">
+        <label class="il" for="m-femail">Email</label>
+        <div class="iw"><span class="ii">📧</span>
+          <input class="fi" id="m-femail" type="email" placeholder="farmer@aquaroot.io"/>
+        </div>
+        <div class="em" id="m-femailE">Please enter a valid email.</div>
+      </div>
+      <button class="sbtn" id="m-forgotBtn" onclick="handleMForgot()">
+        <span class="spin"></span><span class="bt">Send Reset Link →</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ─── STATE ─── */
+let appUser = null;
+
+/* ─── UTILS ─── */
+function toast(msg,col){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.color=col||'var(--sprout)';
+  t.classList.add('show');clearTimeout(t._t);
+  t._t=setTimeout(()=>t.classList.remove('show'),3000);
+}
+function tpw(iid,bid){
+  const i=document.getElementById(iid),b=document.getElementById(bid);
+  i.type=i.type==='password'?'text':'password';
+  b.textContent=i.type==='password'?'👁':'🙈';
+}
+function simLoad(bid,ms,cb){
+  const b=document.getElementById(bid);
+  b.classList.add('loading');
+  setTimeout(()=>{b.classList.remove('loading');cb()},ms);
+}
+function chkStr(v,fid,lid){
+  let s=0;
+  if(v.length>=8)s++;if(/[A-Z]/.test(v))s++;if(/[0-9]/.test(v))s++;if(/[^A-Za-z0-9]/.test(v))s++;
+  const lvl=[{w:'0%',c:'transparent',t:''},{w:'25%',c:'#c84040',t:'Weak'},{w:'50%',c:'var(--amber)',t:'Fair'},{w:'75%',c:'var(--sky)',t:'Good'},{w:'100%',c:'var(--sprout)',t:'Strong 💪'}];
+  const l=lvl[s];
+  const f=document.getElementById(fid),lb=document.getElementById(lid);
+  f.style.width=l.w;f.style.background=l.c;lb.textContent=l.t;lb.style.color=l.c;
+}
+
+/* ─── LOGIN SCREEN PANELS ─── */
+function lpShow(id){
+  document.querySelectorAll('#loginScreen .lpanel').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function handleLogin(){
+  const u=document.getElementById('l-user'),p=document.getElementById('l-pw');
+  const uE=document.getElementById('l-userE'),pE=document.getElementById('l-pwE');
+  let ok=true;
+  if(!u.value.trim()){u.classList.add('err');uE.classList.add('show');ok=false;}else{u.classList.remove('err');uE.classList.remove('show');}
+  if(!p.value.trim()){p.classList.add('err');pE.classList.add('show');ok=false;}else{p.classList.remove('err');pE.classList.remove('show');}
+  if(!ok)return;
+  simLoad('l-loginBtn',1800,()=>{
+    const name=u.value.trim().split('@')[0];
+    doLogin(name,u.value.trim());
+  });
+}
+
+function qlogin(provider){
+  const map={Google:'John Farmer',Apple:'Apple User',SSO:'Corp Farmer'};
+  const name=map[provider];
+  doLogin(name,name.toLowerCase().replace(' ','.')+'@aquaroot.io');
+}
+
+function doLogin(name,email){
+  appUser={name,email,initial:name.charAt(0).toUpperCase()};
+  const veil=document.getElementById('pageVeil');
+  veil.classList.add('in');
+  setTimeout(()=>{
+    document.getElementById('loginScreen').classList.remove('visible');
+    document.getElementById('mainApp').classList.add('visible');
+    document.getElementById('leftRail').classList.add('visible');
+    updateProfile();
+    veil.classList.remove('in');
+    setTimeout(()=>toast(`🌱 Welcome back, ${name.split(' ')[0]}!`),400);
+  },800);
+}
+
+function lSendCode(){
+  const e=document.getElementById('l-femail'),eE=document.getElementById('l-femailE');
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.value.trim())){e.classList.add('err');eE.classList.add('show');return;}
+  e.classList.remove('err');eE.classList.remove('show');
+  document.getElementById('l-emailShow').textContent=e.value.trim();
+  simLoad('l-sendBtn',1400,()=>{
+    lpShow('lp-otp');toast('📧 Code sent to '+e.value.trim());
+    setTimeout(()=>document.getElementById('o1').focus(),100);
+  });
+}
+function lVerify(){
+  const code=['o1','o2','o3','o4','o5','o6'].map(id=>document.getElementById(id).value).join('');
+  if(code.length<6){toast('⚠ Enter the full 6-digit code','var(--amber)');return;}
+  simLoad('l-verifyBtn',1200,()=>lpShow('lp-newpw'));
+}
+function lReset(){
+  const np=document.getElementById('l-np'),cp=document.getElementById('l-cp');
+  const npE=document.getElementById('l-npE2'),cpE=document.getElementById('l-cpE2');
+  let ok=true;
+  if(np.value.length<8){np.classList.add('err');npE.classList.add('show');ok=false;}else{np.classList.remove('err');npE.classList.remove('show');}
+  if(np.value!==cp.value){cp.classList.add('err');cpE.classList.add('show');ok=false;}else{cp.classList.remove('err');cpE.classList.remove('show');}
+  if(!ok)return;
+  simLoad('l-resetBtn',1500,()=>lpShow('lp-success'));
+}
+
+/* OTP auto-advance */
+['o1','o2','o3','o4','o5','o6'].forEach((id,i,a)=>{
+  const inp=document.getElementById(id);
+  inp.addEventListener('input',()=>{if(inp.value&&i<5)document.getElementById(a[i+1]).focus()});
+  inp.addEventListener('keydown',e=>{if(e.key==='Backspace'&&!inp.value&&i>0)document.getElementById(a[i-1]).focus()});
+});
+
+/* ─── PROFILE UI ─── */
+function updateProfile(){
+  const btn=document.getElementById('profBtn'),init=document.getElementById('profInit');
+  const dd=document.getElementById('profDD');
+  if(appUser){
+    btn.classList.add('in');init.textContent=appUser.initial;
+    dd.innerHTML=`
+      <div class="pd-head">
+        <div class="pd-av">${appUser.initial}</div>
+        <div><div class="pd-name">${appUser.name}</div><div class="pd-mail">${appUser.email}</div></div>
+      </div>
+      <button class="pd-row" onclick="closeDD();showTab('dashboard')">📊 &nbsp;Dashboard</button>
+      <button class="pd-row" onclick="closeDD();showTab('farmmanager')">🌾 &nbsp;Farm Manager</button>
+      <button class="pd-row" onclick="closeDD()">⚙️ &nbsp;Account Settings</button>
+      <button class="pd-row" onclick="closeDD()">🔔 &nbsp;Notifications</button>
+      <div class="pd-sep"></div>
+      <button class="pd-row red" onclick="handleLogout()">↩️ &nbsp;Sign Out</button>
+    `;
+  } else {
+    btn.classList.remove('in');init.textContent='👤';
+    dd.innerHTML=`
+      <div class="pd-guest">
+        <p>Sign in to access your farm dashboard, live sensor data, and field controls.</p>
+        <button class="pd-guest-btn" onclick="closeDD();openProfModal()">🌱 Sign In to AquaRoot</button>
+      </div>
+    `;
+  }
+}
+
+function toggleDD(){document.getElementById('profDD').classList.toggle('open')}
+function closeDD(){document.getElementById('profDD').classList.remove('open')}
+document.addEventListener('click',e=>{
+  const w=document.querySelector('.prof-wrap');
+  if(w&&!w.contains(e.target))closeDD();
+});
+function handleLogout(){
+  closeDD();appUser=null;updateProfile();toast('👋 Signed out successfully');
+}
+
+/* ─── PROFILE MODAL ─── */
+function openProfModal(){document.getElementById('profModal').classList.add('open');openMLogin()}
+function closeProfModal(){document.getElementById('profModal').classList.remove('open')}
+function openMLogin(){document.getElementById('m-loginP').style.display='block';document.getElementById('m-forgotP').style.display='none'}
+function openMForgot(){document.getElementById('m-loginP').style.display='none';document.getElementById('m-forgotP').style.display='block'}
+function handleModalLogin(){
+  const u=document.getElementById('m-user'),p=document.getElementById('m-pw');
+  const uE=document.getElementById('m-userE'),pE=document.getElementById('m-pwE');
+  let ok=true;
+  if(!u.value.trim()){u.classList.add('err');uE.classList.add('show');ok=false;}else{u.classList.remove('err');uE.classList.remove('show');}
+  if(!p.value.trim()){p.classList.add('err');pE.classList.add('show');ok=false;}else{p.classList.remove('err');pE.classList.remove('show');}
+  if(!ok)return;
+  simLoad('m-loginBtn',1600,()=>{
+    const name=u.value.trim().split('@')[0];
+    appUser={name,email:u.value.trim(),initial:name.charAt(0).toUpperCase()};
+    updateProfile();closeProfModal();
+    toast(`✅ Welcome, ${name.split('.')[0]}!`);
+    u.value='';p.value='';
+  });
+}
+function qloginModal(p){
+  const m={Google:'John Farmer',Apple:'Apple User',SSO:'Corp Farmer'};
+  const name=m[p];
+  appUser={name,email:name.toLowerCase().replace(' ','.')+'@aquaroot.io',initial:name.charAt(0).toUpperCase()};
+  updateProfile();closeProfModal();toast(`✅ Signed in via ${p}`);
+}
+function handleMForgot(){
+  const e=document.getElementById('m-femail'),eE=document.getElementById('m-femailE');
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.value.trim())){e.classList.add('err');eE.classList.add('show');return;}
+  e.classList.remove('err');eE.classList.remove('show');
+  simLoad('m-forgotBtn',1400,()=>{
+    closeProfModal();toast('📧 Reset link sent to '+e.value.trim());openMLogin();e.value='';
+  });
+}
+document.getElementById('profModal').addEventListener('click',function(e){if(e.target===this)closeProfModal()});
+
+/* ─── TABS ─── */
+function showTab(id){
+  document.querySelectorAll('#mainApp .tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  ['home','dashboard','farmmanager'].forEach(n=>{
+    const b=document.getElementById('nb-'+n);
+    if(b)b.classList.toggle('active',n===id);
+  });
+  window.scrollTo(0,0);
+  if(id==='dashboard')setTimeout(drawChart,80);
+}
+
+/* ─── CHART ─── */
+function drawChart(){
+  const canvas=document.getElementById('usageChart');
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.parentElement.offsetWidth-48||500,H=200;
+  const dpr=window.devicePixelRatio||1;
+  canvas.width=W*dpr;canvas.height=H*dpr;
+  canvas.style.width=W+'px';canvas.style.height=H+'px';
+  ctx.scale(dpr,dpr);
+  const data=[5.1,4.8,6.2,3.9,4.2,5.6,4.2];
+  const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const maxV=7,pL=40,pR=16,pT=20,pB=36;
+  const cW=W-pL-pR,cH=H-pT-pB;
+  ctx.clearRect(0,0,W,H);
+  [0,.25,.5,.75,1].forEach(t=>{
+    const y=pT+cH*(1-t);
+    ctx.strokeStyle='rgba(255,255,255,.06)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(pL,y);ctx.lineTo(pL+cW,y);ctx.stroke();
+    ctx.fillStyle='rgba(248,242,230,.3)';ctx.font='11px Outfit,sans-serif';ctx.textAlign='right';
+    ctx.fillText((maxV*t).toFixed(1),pL-6,y+4);
+  });
+  const bw=(cW/data.length)*0.52;
+  data.forEach((v,i)=>{
+    const x=pL+(cW/data.length)*i+(cW/data.length)*0.24;
+    const bh=(v/maxV)*cH,y=pT+cH-bh;
+    const g=ctx.createLinearGradient(0,y,0,pT+cH);
+    g.addColorStop(0,'rgba(78,184,196,.9)');g.addColorStop(1,'rgba(45,94,42,.4)');
+    ctx.fillStyle=g;ctx.beginPath();ctx.roundRect(x,y,bw,bh,[6,6,2,2]);ctx.fill();
+    ctx.fillStyle='rgba(248,242,230,.4)';ctx.font='11px Outfit,sans-serif';ctx.textAlign='center';
+    ctx.fillText(days[i],x+bw/2,pT+cH+18);
+    ctx.fillStyle='rgba(248,242,230,.75)';ctx.font='bold 10px Outfit,sans-serif';
+    ctx.fillText(v+'k',x+bw/2,y-5);
+  });
+}
+
+/* ─── clear errors on type ─── */
+document.querySelectorAll('.fi').forEach(f=>{
+  f.addEventListener('input',()=>{
+    f.classList.remove('err');
+    const e=f.closest('.ig')?.querySelector('.em');
+    if(e)e.classList.remove('show');
+  });
+});
+
+updateProfile();
+</script>
+<!-- ════════════════════════════════════════
+     LEFT RAIL + SIDE PANEL
+════════════════════════════════════════ -->
+<div id="sbBack" onclick="closeSP()"></div>
+
+<div id="leftRail">
+  <!-- Settings -->
+  <button class="rail-btn" id="rb-settings" data-tip="Settings" onclick="openSP('settings','s-notifications')">
+    <span class="rbi">⚙️</span><span class="rbl">Settings</span>
+  </button>
+  <!-- Chat -->
+  <button class="rail-btn" id="rb-chat" data-tip="Live Chat" onclick="openSP('chat','c-chat')">
+    <span class="rbi">💬</span><span class="rbl">Chat</span>
+    <span class="rb-badge" id="chatBadge"></span>
+  </button>
+  <div class="rail-sep"></div>
+  <!-- Contact -->
+  <button class="rail-btn" id="rb-contact" data-tip="Contact Us" onclick="openSP('contact','ct-phone')">
+    <span class="rbi">📞</span><span class="rbl">Contact</span>
+  </button>
+  <!-- Language -->
+  <button class="rail-btn" id="rb-lang" data-tip="Language" onclick="openSP('lang','l-language')">
+    <span class="rbi">🌐</span><span class="rbl">Language</span>
+  </button>
+</div>
+
+<div id="sidePanel">
+  <div class="sp-head">
+    <div class="sp-title" id="spTitle">Settings</div>
+    <button class="sp-close" onclick="closeSP()">✕</button>
+  </div>
+  <div class="sp-tabs" id="spTabsRow"></div>
+  <div class="sp-body" id="spBody"></div>
+</div>
+
+<script>
+/* ══════════════════════════════
+   SIDEBAR DATA
+══════════════════════════════ */
+const SP_CONFIG = {
+  settings: {
+    title: '⚙️ Settings',
+    tabs: [
+      { id:'s-notifications', label:'🔔 Alerts' },
+      { id:'s-irrigation',    label:'💧 Irrigation' },
+      { id:'s-display',       label:'🎨 Display' },
+      { id:'s-privacy',       label:'🔐 Privacy' },
+    ],
+    pages: {
+      's-notifications': `
+        <div class="sg-title">Push Notifications</div>
+        ${sgRow('🔔','Push Alerts','Zone & moisture events','tog on')}
+        ${sgRow('⚠️','Critical Alerts','Leaks & sensor failures','tog on')}
+        ${sgRow('📊','Daily Summary','7 AM digest report','tog on')}
+        ${sgRow('🌧️','Rain Forecast','Upcoming rain warnings','tog off')}
+        <div class="sg-title">Email & SMS</div>
+        ${sgRow('📧','Email Reports','Daily digest to inbox','tog on')}
+        ${sgRow('📱','SMS Alerts','Critical events only','tog off')}
+        ${sgRow('📲','WhatsApp Updates','Field status messages','tog off')}
+        <div class="sg-title">Alert Thresholds</div>
+        <div class="sg-row">
+          <div class="sg-left">
+            <div class="sg-icon">💧</div>
+            <div><div class="sg-lbl">Low Moisture Alert</div><div class="sg-sub">Trigger below this %</div></div>
+          </div>
+          <select class="sg-select"><option>30%</option><option>35%</option><option>40%</option><option>45%</option></select>
+        </div>
+        <div class="sg-row">
+          <div class="sg-left">
+            <div class="sg-icon">🌡️</div>
+            <div><div class="sg-lbl">High Temp Alert</div><div class="sg-sub">Soil temperature</div></div>
+          </div>
+          <select class="sg-select"><option>35°C</option><option>38°C</option><option>40°C</option></select>
+        </div>`,
+      's-irrigation': `
+        <div class="sg-title">Automation</div>
+        ${sgRow('🤖','AI Auto-Schedule','ML-generated cycles','tog on')}
+        ${sgRow('🌧️','Rain Skip Mode','Pause when rain forecast','tog on')}
+        ${sgRow('🌙','Night Irrigation','Prefer low-evap cycles','tog off')}
+        ${sgRow('⚡','Emergency Shutoff','Auto-detect pipe bursts','tog on')}
+        <div class="sg-title">Schedule Defaults</div>
+        <div class="sg-row">
+          <div class="sg-left"><div class="sg-icon">⏰</div><div><div class="sg-lbl">Default Start Time</div><div class="sg-sub">Morning cycle</div></div></div>
+          <select class="sg-select"><option>05:00</option><option>06:00</option><option>07:00</option></select>
+        </div>
+        <div class="sg-row">
+          <div class="sg-left"><div class="sg-icon">⏱️</div><div><div class="sg-lbl">Cycle Duration</div><div class="sg-sub">Default per zone</div></div></div>
+          <select class="sg-select"><option>20 min</option><option>30 min</option><option>45 min</option></select>
+        </div>
+        <div class="sg-row">
+          <div class="sg-left"><div class="sg-icon">🔄</div><div><div class="sg-lbl">Cycles Per Day</div><div class="sg-sub">Max automatic runs</div></div></div>
+          <select class="sg-select"><option>1×</option><option>2×</option><option>3×</option></select>
+        </div>
+        <div class="sg-title">Water Conservation</div>
+        ${sgRow('📉','Water Budget Mode','Cap daily usage','tog off')}
+        ${sgRow('♻️','Recycled Water Priority','Use treated first','tog off')}`,
+      's-display': `
+        <div class="sg-title">Appearance</div>
+        <div class="sg-row">
+          <div class="sg-left"><div class="sg-icon">🎨</div><div><div class="sg-lbl">Theme</div><div class="sg-sub">App colour scheme</div></div></div>
+          <select class="sg-select"><option>Dark Earth</option><option>Forest</option><option>Midnight</option><option>Light</option></select>
+        </div>
+        <div class="sg-row">
+          <div class="sg-left"><div class="sg-icon">🔤</div><div><div class="sg-lbl">Font Size</div><div class="sg-sub">Interface text</div></div></div>
+          <select class="sg-select"><option>Normal</option><option>Large</option><option>X-Large</option></select>
+        </div>
+        <div class="sg-title">Dashboard Layout</div>
+        <div class="sg-row">
+          <div class="sg-left"><div class="sg-icon">📐</div><div><div class="sg-lbl">Density</div><div class="sg-sub">Card spacing</div></div></div>
+          <select class="sg-select"><option>Comfortable</option><option>Compact</option><option>Spacious</option></select>
+        </div>
+        ${sgRow('🗺️','Show Field Map','Zone visual overlay','tog on')}
+        ${sgRow('📈','Show Trend Lines','7-day sparklines','tog on')}
+        ${sgRow('🌡️','Show Soil Temp','In zone cards','tog off')}
+        <div class="sg-title">Units</div>
+        <div class="sg-row">
+          <div class="sg-left"><div class="sg-icon">📏</div><div><div class="sg-lbl">Measurement</div><div class="sg-sub">System</div></div></div>
+          <select class="sg-select"><option>Metric</option><option>Imperial</option></select>
+        </div>
+        <div class="sg-row">
+          <div class="sg-left"><div class="sg-icon">💧</div><div><div class="sg-lbl">Volume</div></div></div>
+          <select class="sg-select"><option>Litres</option><option>Gallons</option></select>
+        </div>`,
+      's-privacy': `
+        <div class="sg-title">Account Security</div>
+        ${sgRow('🔐','Two-Factor Auth','Extra login security','tog off')}
+        ${sgRow('👁','Login Alerts','Email on new sign-in','tog on')}
+        ${sgRow('🔑','Session Timeout','Auto logout after idle','tog off')}
+        <div class="sg-title">Data & Privacy</div>
+        ${sgRow('📍','Location Sharing','Improves weather data','tog on')}
+        ${sgRow('📊','Usage Analytics','Help improve AquaRoot','tog on')}
+        ${sgRow('🧾','Data Export','Download your farm data','tog off')}
+        <div class="sg-title">Connected Devices</div>
+        <div class="sg-row"><div class="sg-left"><div class="sg-icon">📡</div><div><div class="sg-lbl">Sensor Gateway A</div><div class="sg-sub">North Field · Online</div></div></div><button class="tog on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button></div>
+        <div class="sg-row"><div class="sg-left"><div class="sg-icon">📡</div><div><div class="sg-lbl">Sensor Gateway B</div><div class="sg-sub">South Field · Online</div></div></div><button class="tog on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button></div>
+        <div class="sg-row"><div class="sg-left"><div class="sg-icon">🚰</div><div><div class="sg-lbl">Valve Controller</div><div class="sg-sub">Main pump · Active</div></div></div><button class="tog on" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button></div>
+        <div style="margin-top:1.1rem">
+          <button style="width:100%;padding:.62rem;background:rgba(200,64,64,.12);border:1px solid rgba(200,64,64,.25);border-radius:10px;color:var(--err);font-family:'Outfit',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;">🗑 Delete Account Data</button>
+        </div>`,
+    }
+  },
+  chat: {
+    title: '💬 Support Chat',
+    tabs: [
+      { id:'c-chat',    label:'💬 Chat' },
+      { id:'c-history', label:'🗂 History' },
+      { id:'c-faq',     label:'❓ FAQs' },
+    ],
+    pages: {
+      'c-chat': `
+        <div class="chat-agent-bar">
+          <div class="chat-agent-av">🌱</div>
+          <div>
+            <div class="chat-agent-name">Aqua Assistant</div>
+            <div class="chat-agent-status"><span class="c-dot"></span> Online now · Avg response &lt;1 min</div>
+          </div>
+        </div>
+        <div class="chat-quick-btns">
+          <button class="cqb" onclick="injectChat('Zone C moisture alert')">Zone C alert</button>
+          <button class="cqb" onclick="injectChat('Schedule today')">Today's schedule</button>
+          <button class="cqb" onclick="injectChat('Water usage report')">Usage report</button>
+          <button class="cqb" onclick="injectChat('Rain forecast')">Rain forecast</button>
+        </div>
+        <div class="chat-msgs" id="chatMsgs">
+          <div class="cmsg bot">👋 Hi! I'm Aqua, your smart irrigation assistant.<div class="cmsg-time">Now</div></div>
+          <div class="cmsg bot">Ask me about moisture levels, schedules, weather, or sensor issues.<div class="cmsg-time">Now</div></div>
+        </div>
+        <div class="chat-typing-row" id="chatTyping">
+          <span>Aqua is typing</span>
+          <div class="t-dots"><b></b><b></b><b></b></div>
+        </div>
+        <div class="chat-input-wrap">
+          <textarea class="chat-txt" id="chatInput" placeholder="Ask about your crops…" rows="1" onkeydown="chatKey(event)"></textarea>
+          <button class="chat-send-btn" onclick="sendChat()">➤</button>
+        </div>`,
+      'c-history': `
+        <div class="sg-title">Previous Conversations</div>
+        ${histItem('Zone A irrigation issue resolved','Today · 09:30 AM','3 messages')}
+        ${histItem('Rain skip not activating correctly','Yesterday · 2:14 PM','7 messages')}
+        ${histItem('How to set moisture thresholds','Mar 7 · 11:00 AM','5 messages')}
+        ${histItem('Sensor Gateway B went offline','Mar 5 · 6:45 PM','9 messages')}
+        ${histItem('Billing & subscription query','Mar 2 · 3:20 PM','4 messages')}`,
+      'c-faq': `
+        <div class="sg-title">Frequently Asked Questions</div>
+        ${faqItem('Why is Zone C showing low moisture?','Zone C uses more water due to sandy soil. Check the sensor calibration and ensure the drip line isn't clogged.')}
+        ${faqItem('How does Rain Skip work?','When a ≥5mm rain is forecast within 24 hours, AquaRoot automatically suspends all scheduled cycles.')}
+        ${faqItem('Can I override the AI schedule?','Yes — go to Farm Manager → Schedule and toggle any cycle off or use the manual run button.')}
+        ${faqItem('How often do sensors update?','Sensors send readings every 60 seconds via the wireless gateway.')}
+        ${faqItem('What happens if a sensor goes offline?','You receive an immediate push alert. The zone switches to a backup schedule based on historical averages.')}
+        ${faqItem('How do I add a new zone?','Go to Farm Manager and tap "+ Add Zone". You can name it, set crop type, area, and sensor assignments.')}`,
+    }
+  },
+  contact: {
+    title: '📞 Contact Us',
+    tabs: [
+      { id:'ct-phone',   label:'📞 Phone' },
+      { id:'ct-digital', label:'💬 Digital' },
+      { id:'ct-support', label:'🎟 Tickets' },
+    ],
+    pages: {
+      'ct-phone': `
+        <div class="cc-card">
+          <div class="cc-top"><div class="cc-ico g">📞</div><div><div class="cc-name">Toll-Free Helpline</div><div class="cc-sub">Talk to a farm advisor</div></div></div>
+          <div class="cc-val">1800-AQUA-ROOT</div>
+          <div class="cc-val" style="font-size:.76rem;color:rgba(248,242,230,.4)">1800-2782-7668</div>
+          <div class="cc-avail"><span class="cc-avail-dot"></span>Available now · EN / HI / MR</div>
+        </div>
+        <div class="cc-card">
+          <div class="cc-top"><div class="cc-ico g">🎧</div><div><div class="cc-name">Technical Support</div><div class="cc-sub">Sensor & hardware issues</div></div></div>
+          <div class="cc-val">+91 80 4567 8900</div>
+          <div class="cc-avail"><span class="cc-avail-dot" style="background:var(--amber);animation:none"></span>Available Mon–Sat · 9 AM – 6 PM</div>
+        </div>
+        <div class="hours-note">📅 Helpline Hours<br>Mon–Sat · 6 AM – 9 PM IST<br><span style="color:var(--sprout)">Sunday · 8 AM – 5 PM IST</span></div>`,
+      'ct-digital': `
+        <div class="cc-card">
+          <div class="cc-top"><div class="cc-ico b">💬</div><div><div class="cc-name">WhatsApp</div><div class="cc-sub">Quick field queries</div></div></div>
+          <div class="cc-val">+91 98765 43210</div>
+          <div class="cc-avail"><span class="cc-avail-dot"></span>Responds in &lt;5 minutes</div>
+        </div>
+        <div class="cc-card">
+          <div class="cc-top"><div class="cc-ico b">📧</div><div><div class="cc-name">Email Support</div><div class="cc-sub">Detailed queries & reports</div></div></div>
+          <div class="cc-val">support@aquaroot.io</div>
+          <div class="cc-avail"><span class="cc-avail-dot" style="background:var(--amber);animation:none"></span>Replies within 4 hours</div>
+        </div>
+        <div class="cc-card">
+          <div class="cc-top"><div class="cc-ico a">🌐</div><div><div class="cc-name">Help Centre</div><div class="cc-sub">Guides, FAQs, tutorials</div></div></div>
+          <div class="cc-val">help.aquaroot.io</div>
+        </div>
+        <button class="contact-cta" onclick="openSP('chat','c-chat')">💬 Start Live Chat Now</button>`,
+      'ct-support': `
+        <div class="sg-title">Open Tickets</div>
+        ${ticketItem('#AQ-4821','Zone B pressure drop','Open','warn')}
+        ${ticketItem('#AQ-4808','Gateway firmware update','In Progress','sky')}
+        <div class="sg-title">Resolved Tickets</div>
+        ${ticketItem('#AQ-4790','Sensor calibration request','Resolved','ok')}
+        ${ticketItem('#AQ-4775','Billing adjustment','Resolved','ok')}
+        ${ticketItem('#AQ-4761','Zone A valve stuck','Resolved','ok')}
+        <button class="contact-cta" style="margin-top:1.1rem">+ Raise New Ticket</button>`,
+    }
+  },
+  lang: {
+    title: '🌐 Language',
+    tabs: [
+      { id:'l-language', label:'🌐 Language' },
+      { id:'l-region',   label:'📐 Units' },
+      { id:'l-timezone', label:'🕐 Time' },
+    ],
+    pages: {
+      'l-language': `
+        <div class="sg-title">Select App Language</div>
+        <div class="lang-grid">
+          ${langCard('🇬🇧','English','English','en',true)}
+          ${langCard('🇮🇳','Hindi','हिंदी','hi')}
+          ${langCard('🇮🇳','Marathi','मराठी','mr')}
+          ${langCard('🇮🇳','Punjabi','ਪੰਜਾਬੀ','pa')}
+          ${langCard('🇮🇳','Gujarati','ગુજરાતી','gu')}
+          ${langCard('🇮🇳','Tamil','தமிழ்','ta')}
+          ${langCard('🇮🇳','Telugu','తెలుగు','te')}
+          ${langCard('🇮🇳','Kannada','ಕನ್ನಡ','kn')}
+          ${langCard('🇧🇩','Bengali','বাংলা','bn')}
+          ${langCard('🇸🇦','Arabic','العربية','ar')}
+        </div>
+        <button class="lang-save" onclick="saveLang()">✓ Apply Language</button>`,
+      'l-region': `
+        <div class="sg-title">Measurement Units</div>
+        <div class="sg-row"><div class="sg-left"><div class="sg-icon">🌡️</div><div><div class="sg-lbl">Temperature</div></div></div><select class="sg-select"><option>°C Celsius</option><option>°F Fahrenheit</option></select></div>
+        <div class="sg-row"><div class="sg-left"><div class="sg-icon">💧</div><div><div class="sg-lbl">Volume</div></div></div><select class="sg-select"><option>Litres (L)</option><option>Gallons</option></select></div>
+        <div class="sg-row"><div class="sg-left"><div class="sg-icon">📐</div><div><div class="sg-lbl">Area</div></div></div><select class="sg-select"><option>Hectares (ha)</option><option>Acres</option><option>Bigha</option><option>sq.m</option></select></div>
+        <div class="sg-row"><div class="sg-left"><div class="sg-icon">💨</div><div><div class="sg-lbl">Wind Speed</div></div></div><select class="sg-select"><option>km/h</option><option>mph</option><option>m/s</option></select></div>
+        <div class="sg-row"><div class="sg-left"><div class="sg-icon">🌧️</div><div><div class="sg-lbl">Rainfall</div></div></div><select class="sg-select"><option>Millimetres</option><option>Inches</option></select></div>
+        <div class="sg-row"><div class="sg-left"><div class="sg-icon">⚡</div><div><div class="sg-lbl">Flow Rate</div></div></div><select class="sg-select"><option>L/hr</option><option>gal/hr</option></select></div>
+        <button class="lang-save" onclick="toast('📐 Units saved!')">✓ Save Units</button>`,
+      'l-timezone': `
+        <div class="sg-title">Time Zone</div>
+        <div class="sg-row"><div class="sg-left"><div class="sg-icon">🕐</div><div><div class="sg-lbl">Time Zone</div><div class="sg-sub">Used for scheduling</div></div></div><select class="sg-select"><option>IST UTC+5:30</option><option>UTC</option><option>EST UTC-5</option><option>PST UTC-8</option></select></div>
+        <div class="sg-title">Date & Time Format</div>
+        <div class="sg-row"><div class="sg-left"><div class="sg-icon">📅</div><div><div class="sg-lbl">Date Format</div></div></div><select class="sg-select"><option>DD/MM/YYYY</option><option>MM/DD/YYYY</option><option>YYYY-MM-DD</option></select></div>
+        <div class="sg-row"><div class="sg-left"><div class="sg-icon">⏰</div><div><div class="sg-lbl">Time Format</div></div></div><select class="sg-select"><option>24-hour</option><option>12-hour AM/PM</option></select></div>
+        <div class="sg-row"><div class="sg-left"><div class="sg-icon">📆</div><div><div class="sg-lbl">Week Starts</div></div></div><select class="sg-select"><option>Monday</option><option>Sunday</option><option>Saturday</option></select></div>
+        <div class="sg-title">Season & Crop Calendar</div>
+        ${sgRow('🌾','Rabi/Kharif Mode','Indian crop season','tog on')}
+        ${sgRow('📆','Season Reminders','Planting & harvest alerts','tog on')}
+        <button class="lang-save" style="margin-top:1rem" onclick="toast('🕐 Time settings saved!')">✓ Save Time Settings</button>`,
+    }
+  }
+};
+
+/* ── Template helpers ── */
+function sgRow(icon,lbl,sub,ctrl){
+  return `<div class="sg-row">
+    <div class="sg-left"><div class="sg-icon">${icon}</div><div><div class="sg-lbl">${lbl}</div><div class="sg-sub">${sub}</div></div></div>
+    <button class="${ctrl}" onclick="this.classList.toggle('on');this.classList.toggle('off')"></button>
+  </div>`;
+}
+function histItem(title,time,msgs){
+  return `<div class="cc-card"><div class="cc-top"><div class="cc-ico b">💬</div><div><div class="cc-name">${title}</div><div class="cc-sub">${time} · ${msgs}</div></div></div></div>`;
+}
+function faqItem(q,a){
+  return `<div class="cc-card" onclick="this.querySelector('.faq-ans').style.display=this.querySelector('.faq-ans').style.display==='block'?'none':'block'">
+    <div class="cc-name" style="font-size:.85rem">${q}</div>
+    <div class="faq-ans" style="display:none;font-size:.8rem;color:rgba(248,242,230,.6);margin-top:.5rem;line-height:1.6">${a}</div>
+  </div>`;
+}
+function ticketItem(id,title,status,type){
+  const col={warn:'var(--amber)',sky:'var(--sky)',ok:'var(--sprout)'}[type];
+  return `<div class="cc-card"><div style="display:flex;justify-content:space-between;align-items:center"><div><div class="cc-name">${title}</div><div class="cc-sub">${id}</div></div><span style="font-size:.7rem;font-weight:700;color:${col};background:${col}22;border:1px solid ${col}44;border-radius:999px;padding:.2rem .6rem">${status}</span></div></div>`;
+}
+function langCard(flag,name,native,code,sel){
+  return `<div class="lang-card${sel?' sel':''}" onclick="selectLang(this,'${code}')"><div class="lang-flag">${flag}</div><div class="lang-name">${name}</div><div class="lang-nat">${native}</div></div>`;
+}
+
+/* ══════════════════════════
+   SIDEBAR LOGIC
+══════════════════════════ */
+let currentSection = null;
+
+function openSP(section, defaultTab) {
+  const cfg = SP_CONFIG[section];
+  if (!cfg) return;
+
+  // mark rail button active
+  document.querySelectorAll('.rail-btn').forEach(b => b.classList.remove('active'));
+  const rbId = 'rb-' + (section === 'settings' ? 'settings'
+                       : section === 'chat'    ? 'chat'
+                       : section === 'contact' ? 'contact' : 'lang');
+  const rb = document.getElementById(rbId);
+  if (rb) rb.classList.add('active');
+
+  // build tabs
+  document.getElementById('spTitle').textContent = cfg.title;
+  const tabRow = document.getElementById('spTabsRow');
+  tabRow.innerHTML = '';
+  cfg.tabs.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'sptab' + (t.id === defaultTab ? ' active' : '');
+    btn.textContent = t.label;
+    btn.onclick = () => switchSPTab(section, t.id, btn);
+    tabRow.appendChild(btn);
+  });
+
+  // render default page
+  renderSPPage(section, defaultTab);
+
+  currentSection = section;
+  document.getElementById('sidePanel').classList.add('open');
+  document.getElementById('sbBack').classList.add('show');
+
+  // hide chat badge
+  if (section === 'chat') {
+    const b = document.getElementById('chatBadge');
+    if (b) b.style.display = 'none';
+  }
+}
+
+function switchSPTab(section, tabId, btnEl) {
+  document.querySelectorAll('#spTabsRow .sptab').forEach(b => b.classList.remove('active'));
+  btnEl.classList.add('active');
+  renderSPPage(section, tabId);
+}
+
+function renderSPPage(section, tabId) {
+  const html = SP_CONFIG[section]?.pages[tabId] || '';
+  document.getElementById('spBody').innerHTML = `<div class="sp-page active">${html}</div>`;
+}
+
+function closeSP() {
+  document.getElementById('sidePanel').classList.remove('open');
+  document.getElementById('sbBack').classList.remove('show');
+  document.querySelectorAll('.rail-btn').forEach(b => b.classList.remove('active'));
+  currentSection = null;
+}
+
+/* ══════════════════════════
+   CHAT LOGIC
+══════════════════════════ */
+const BOT = [
+  "Sure! Checking your latest sensor data… 🌱",
+  "Zone C moisture is at 31% — below 45% optimal for soybean. I recommend triggering an irrigation cycle now.",
+  "Your AI schedule has Zone C at 16:00. Would you like to move it earlier?",
+  "No rain forecast for 48 hours. All zones on automated schedule.",
+  "Today's water usage: 4.2 kL — 38% below seasonal average. Great efficiency! 💧",
+  "I can adjust zone thresholds, generate reports, or connect you to a farm advisor.",
+  "Your North Field has 6 active zones. 2 are currently irrigating, 4 are on standby.",
+];
+let botIdx = 0;
+
+function chatKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+}
+
+function injectChat(msg) {
+  const inp = document.getElementById('chatInput');
+  if (inp) { inp.value = msg; sendChat(); }
+}
+
+function sendChat() {
+  const inp = document.getElementById('chatInput');
+  if (!inp) return;
+  const msg = inp.value.trim();
+  if (!msg) return;
+  const box = document.getElementById('chatMsgs');
+  if (!box) return;
+  const now = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+  box.innerHTML += `<div class="cmsg user">${msg}<div class="cmsg-time">${now}</div></div>`;
+  inp.value = '';
+  box.scrollTop = box.scrollHeight;
+  const typing = document.getElementById('chatTyping');
+  if (typing) typing.classList.add('show');
+  setTimeout(() => {
+    if (typing) typing.classList.remove('show');
+    const reply = BOT[botIdx++ % BOT.length];
+    box.innerHTML += `<div class="cmsg bot">${reply}<div class="cmsg-time">${new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div></div>`;
+    box.scrollTop = box.scrollHeight;
+  }, 1600);
+}
+
+/* ── Language ── */
+function selectLang(el, code) {
+  document.querySelectorAll('#spBody .lang-card').forEach(c => c.classList.remove('sel'));
+  el.classList.add('sel');
+}
+function saveLang() {
+  const s = document.querySelector('#spBody .lang-card.sel .lang-name');
+  const lang = s ? s.textContent : 'English';
+  closeSP();
+  toast('🌐 Language set to ' + lang);
+}
+</script>
+</body>
+</html>
